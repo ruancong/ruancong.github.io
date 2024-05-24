@@ -5,13 +5,16 @@ import { viteBundler } from '@vuepress/bundler-vite'
 export default defineUserConfig({
   lang: 'en-US',
 
-  title: 'VuePress',
-  description: 'My first VuePress Site',
+  title: '笔记',
+  description: '学习笔记',
 
   theme: defaultTheme({
     logo: 'https://vuejs.press/images/hero.png',
 
-    navbar: ['/', '/get-started'],
+    navbar: [{
+        text: '首页',
+        link: '/',
+      }],
   }),
 
   bundler: viteBundler(),
