@@ -9,7 +9,7 @@ export default defineUserConfig({
   description: '学习笔记',
 
   theme: defaultTheme({
-    logo: 'https://vuejs.press/images/hero.png',
+    //logo: 'https://vuejs.press/images/hero.png',
 
     navbar: [{
         text: '首页',
