@@ -16,7 +16,7 @@
 
 5. （不是个"动作"）的词，把这个词后面的信息赋予给前者:  **(连)系动词** 。主 + 系动词 + （主语）补语【表语】
 
-<img src="../../images/1709262441774.jpg" alt="1709262441774" style="zoom:50%;" />
+<img src="./images/1709262441774.jpg" alt="1709262441774" style="zoom:50%;" />
 
 ### 句子成分
 
@@ -54,21 +54,21 @@
 
 充当谓语的动词
 
-<img src="../../images/image-20240301135928408.png" alt="image-20240301135928408" style="zoom:67%;" />
+<img src="./images/image-20240301135928408.png" alt="image-20240301135928408" style="zoom:67%;" />
 
-<img src="../../images/image-20240301140018953.png" alt="image-20240301140018953" style="zoom:67%;" />
+<img src="./images/image-20240301140018953.png" alt="image-20240301140018953" style="zoom:67%;" />
 
-<img src="../../images/image-20240301140133852.png" alt="image-20240301140133852" style="zoom:67%;" />
+<img src="./images/image-20240301140133852.png" alt="image-20240301140133852" style="zoom:67%;" />
 
 `谓语动词` 要联合 `助动词` 来完成 `时体气`
 
-<img src="../../images/image-20240301142531850.png" alt="image-20240301142531850" style="zoom:67%;" />
+<img src="./images/image-20240301142531850.png" alt="image-20240301142531850" style="zoom:67%;" />
 
 #### 非谓语动词
 
 不充当谓语的动词
 
-<img src="../../images/image-20240301143651504.png" alt="image-20240301143651504" style="zoom:67%;" />
+<img src="./images/image-20240301143651504.png" alt="image-20240301143651504" style="zoom:67%;" />
 
 非谓语动词几乎可以替换所有的从句，从而简化句子，这样用的话，这些动词失去了时态、语气、语态的本领。
 
@@ -96,7 +96,7 @@
 
 ### 过去式 VS 过去分词
 
-<img src="../../images/image-20240307204035214.png" alt="image-20240307204035214" style="zoom:67%;" />
+<img src="./images/image-20240307204035214.png" alt="image-20240307204035214" style="zoom:67%;" />
 
-<img src="../../images/image-20240307204300241.png" alt="image-20240307204300241" style="zoom:67%;" />
+<img src="./images/image-20240307204300241.png" alt="image-20240307204300241" style="zoom:67%;" />
 
