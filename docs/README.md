@@ -2,8 +2,11 @@
 
 ## 技术类
 
+### Linux
+* [linux笔记](./Linux/linux.md)
+
 ### Backend
-* [linux笔记](./linux.md)
+* [问题解决纪录](./Backend/problem-solved/问题解决.md)
 
 ### Frontend
 #### react
