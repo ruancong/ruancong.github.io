@@ -25,3 +25,8 @@
 
 [05-20](./English/daily-words/2024/May/05-20.md)
 
+#### 2025
+
+##### January
+
+[01-03](./English/daily-words/2025/January/01-03.md)
