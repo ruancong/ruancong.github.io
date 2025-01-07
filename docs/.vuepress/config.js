@@ -4,16 +4,19 @@ import { viteBundler } from "@vuepress/bundler-vite";
 
 export default defineUserConfig({
   lang: "zh-CN",
-
   title: "笔记",
   description: "学习笔记",
+  head: [["link", { rel: "icon", href: "/images/logo.svg" }]],
   theme: defaultTheme({
-    //logo: 'https://vuejs.press/images/hero.png',
-
+    logo: "/images/logo.svg",
     navbar: [
       {
         text: "首页",
         link: "/",
+      },
+      {
+        text: "GitHub",
+        link: "https://github.com/ruancong/ruancong.github.io",
       },
     ],
     sidebarDepth: 3,
