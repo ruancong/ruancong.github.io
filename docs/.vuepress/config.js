@@ -19,5 +19,16 @@ export default defineUserConfig({
     sidebarDepth: 3,
   }),
 
-  bundler: viteBundler(),
+  bundler: viteBundler({
+    viteOptions: {
+      resolve: {
+        alias: [
+          {
+            find: /^\.\/audios\/(.*)/,
+            replacement: "/audios/$1",
+          },
+        ],
+      },
+    },
+  }),
 });
