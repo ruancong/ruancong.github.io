@@ -52,7 +52,11 @@ yum list docker-ce --showduplicates | sort -r
 例如：版本号就是  `docker-ce-18.09.1`
 
 ```shell
-yum install docker-ce-<VERSION_STRING> docker-ce-cli-<VERSION_STRING> containerd.io docker-compose-plugin
+yum install \
+docker-ce-<VERSION_STRING> \
+docker-ce-cli-<VERSION_STRING> \
+containerd.io \
+docker-compose-plugin
 ```
 
 ***
@@ -187,27 +191,21 @@ docker run -dp 3000:3000 getting-started
   2. 创建仓库，仓库名与需要推送的image名需要一致
 
 * 本地操作
+  1. 登陆上一步创建的账号
+    ```shell
+    docker login -u YOUR-USER-NAME
+    ```
 
-       	 1. 登陆上一步创建的账号
+  2. 确保image名字与上一步的仓库名一致，如果有需要可以重命名
+    ```shell
+    ## 其中 :TAG_NAME 可以省略，则为 latest
+    docker tag getting-started YOUR-USER-NAME/getting-started:TAG_NAME
+    ```
 
-            ```shell
-            docker login -u YOUR-USER-NAME
-            ```
-
-         2. 确保image名字与上一步的仓库名一致，如果有需要可以重命名
-
-            ```shell
-            ## 其中 :TAG_NAME 可以省略，则为 latest
-            docker tag getting-started YOUR-USER-NAME/getting-started:TAG_NAME
-            ```
-
-         3. 推送
-
-            ```shell
-            docker push YOUR-USER-NAME/getting-started
-            ```
-
-***
+  3. 推送
+    ```shell
+    docker push YOUR-USER-NAME/getting-started
+    ```
 
 ## 在线运行镜像 
 
@@ -215,7 +213,9 @@ Open your browser to [Play with Docker](https://labs.play-with-docker.com/).
 
 ***
 
-## 容器持久化数据 —— Named Volumes
+## 容器持久化数据 
+
+### **Named Volumes**
 
 每个容器的文件是系统是相互独立的，即使是由同一个镜像启动的容器的文件也是相互隔离的。可以通过挂载volume 来实现
 
@@ -241,9 +241,7 @@ docker volume inspect todo-db
 
 ![image-20220507113026889](./images/image-20220507113026889.png)
 
-***
-
-## 容器持久化数据 ——  Bind Mounts
+### **Bind Mounts**
 
 用的代码是上述[示例工程的代码](#code)
 
@@ -266,8 +264,6 @@ docker run -w /app -v "$(pwd):/app" node:16-alpine sh -c "npm config set registr
 ```shell
 docker logs [CONTAINER]
 ```
-
-
 
 ## 基于多个容器的app
 
