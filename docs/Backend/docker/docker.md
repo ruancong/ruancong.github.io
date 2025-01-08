@@ -671,19 +671,19 @@ services:
 
 ## 构建镜像的最佳实践
 
-### 安全扫描
+**安全扫描**
 
 ```shell
 docker scan getting-started
 ```
 
-### 镜像分层查看
+**镜像分层查看**
 
 ```shell
 docker image history getting-started
 ```
 
-### 使镜像大小尽量小
+**使镜像大小尽量小**
 
 * 选用合适的base image.
 
@@ -749,7 +749,7 @@ docker image history getting-started
 
 * 如果自己的创建的镜像有很多相似之处，可以创建自己的base image，其它的基于这个base image构建
 
-### 镜像tag 
+**镜像tag**
 
 一次可以打多个标签
 
@@ -759,26 +759,13 @@ docker image history getting-started
 
 镜像的:latest 并不一定是镜像最新的版本
 
-### 如何持久化应用数据
+**如何持久化应用数据**
 
 * 避免将应用数据存入容器中，这样会使容器大小不断增加；降低I/O效率；
 * 存储数据用volumes
 * One case where it is appropriate to use [bind mounts](https://docs.docker.com/storage/bind-mounts/) is during development, when you may want to mount your source directory or a binary you just built into your container. For production, use a volume instead, mounting it into the same location as you mounted a bind mount during development.
 * For production, use [secrets](https://docs.docker.com/engine/swarm/secrets/) to store sensitive application data used by services, and use [configs](https://docs.docker.com/engine/swarm/configs/) for non-sensitive data such as configuration files. 
 
-## 构建镜像
-
-1. 复制文件到镜像，源可以有多个
-
-```do
-COPY ["<src1>", "<src2>",..., "<dest>"]
-```
-
-2. 镜像启动时运行的命令
-
-```dockerfile
-CMD [ "node", "server.js" ]
-```
 
 ## 镜像相关
 
@@ -786,9 +773,7 @@ CMD [ "node", "server.js" ]
 
 当构建一个新的镜像的tag,是一个已经存在的tag，就会使老的旧镜像变成悬虚镜像
 
-### 过滤 docker image ls 的输出内容
-
-### 单步骤构建
+**单步骤构建**
 
 ```dockerfile
 FROM node:16.14.2
@@ -809,8 +794,6 @@ RUN npm run build && \
 RUN cp -r dist/* /usr/share/nginx/html/
 CMD ["nginx", "-g", "daemon off;"]
 ```
-
-
 
 ## Dockerfile 最佳实践
 
@@ -955,11 +938,11 @@ RUN apt-get update && apt-get install -y \
 
 ## Dockerfile instructions
 
-### FROM
+**FROM**
 
 Whenever possible, use current official images as the basis for your images.
 
-### LABEL
+**LABEL**
 
 For each label, add a line beginning with `LABEL` and with one or more key-value pairs.
 
@@ -992,7 +975,7 @@ LABEL vendor=ACME\ Incorporated \
       com.example.release-date="2015-02-12"
 ```
 
-### RUN
+**RUN**
 
 使用`\`把命令分成多行，便于阅读管理。RUN命令有些陷阱的地方
 
@@ -1056,7 +1039,7 @@ RUN set -o pipefail && wget -O - https://some.site | wc -l > /number
 > RUN ["/bin/bash", "-c", "set -o pipefail && wget -O - https://some.site | wc -l > /number"]
 > ```
 
-### CMD
+**CMD**
 
 The `CMD` instruction should be used to run the software contained in your image, along with any arguments. 
 
@@ -1064,11 +1047,11 @@ The `CMD` instruction should be used to run the software contained in your image
 
 `CMD` should rarely be used in the manner of `CMD ["param", "param"]` in conjunction with [`ENTRYPOINT`](https://docs.docker.com/engine/reference/builder/#entrypoint), unless you and your expected users are already quite familiar with how `ENTRYPOINT` works.
 
-### EXPOSE
+**EXPOSE**
 
 For example, an image containing the Apache web server would use `EXPOSE 80`, while an image containing MongoDB would use `EXPOSE 27017` and so on.
 
-### ENV
+**ENV**
 
 You can use `ENV` to update the `PATH` environment variable for the software your container installs. For example, `ENV PATH=/usr/local/nginx/bin:$PATH` ensures that `CMD ["nginx"]` just works.
 
@@ -1110,7 +1093,7 @@ CMD sh
 docker run --rm test sh -c 'echo $ADMIN_USER'  ## 将不会输出什么
 ```
 
-### ENV vs ARG
+**ENV vs ARG**
 
  Dockerfile 中的 ARG 和 ENV 变量,主要的区别有:
 
@@ -1150,7 +1133,7 @@ CMD ["nginx", "-g", "daemon off;"]
 docker build --build-arg VERSION=1.19.8 -t myimage .
 ```
 
-### ADD or COPY
+**ADD or COPY**
 
 `ADD`与`COPY`的功能基本相同，但首选`COPY`. `COPY` 只有简单的复制文件或文件夹到镜像的功能，`ADD`除些之外，还有自动解压tar文件，与下载远程文件的功能。除了你需要用到这些特性的情况下才使用`ADD`,不然一般都是选用`COPY`. 
 
@@ -1171,7 +1154,7 @@ RUN mkdir -p /usr/src/things \
     && make -C /usr/src/things all
 ```
 
-### ENTRYPOINT
+**ENTRYPOINT**
 
 The best use for `ENTRYPOINT` is to set the image’s main command, allowing that image to be run as though it was that command (and then use `CMD` as the default flags). `ENTRYPOINT`的值将做为主命令，`CMD` 的值将做为参数传入
 
@@ -1223,15 +1206,15 @@ docker run postgres postgres --help
 docker run --rm -it postgres bash
 ```
 
-### VOLUME
+**VOLUME**
 
 The `VOLUME` instruction should be used to expose any database storage area, configuration storage, or files/folders created by your docker container. You are strongly encouraged to use `VOLUME` for any mutable and/or user-serviceable parts of your image.
 
-### WORKDIR
+**WORKDIR**
 
 For clarity and reliability, you should always use absolute paths for your `WORKDIR`. Also, you should use `WORKDIR` instead of proliferating instructions like `RUN cd … && do-something`, which are hard to read, troubleshoot, and maintain.
 
-### ONBUILD
+**ONBUILD**
 
 ## Build images with BuildKit
 
