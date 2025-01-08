@@ -1,4 +1,7 @@
-## 卸载老版本的docker
+
+## 安装docker engine [CentOS]
+
+**卸载老版本的docker**
 
 ```shell
 yum remove docker \
@@ -13,11 +16,10 @@ yum remove docker \
 
 和docker相关的内容存储在 `/var/lib/docker/`, 包括镜像（`images`）, 容器(`containers`), 卷(`volumes`）,网络(`networks`)等。 这些Docker相关的包统称为 `docker-ce`
 
-## 安装docker engine [CentOS]
 
-### 使用repository安装
+**使用repository安装**
 
-#### 安装仓库
+**安装仓库**
 
 * 安装yum-utils (包含 `yum-config-manager`)
     ```shell
@@ -25,10 +27,12 @@ yum remove docker \
     ```
 * 安装 reposityory 
    ```shell
-    yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+    yum-config-manager \
+    --add-repo \
+    https://download.docker.com/linux/centos/docker-ce.repo
    ```
 
-#### 安装docker engine
+**安装docker engine**
 
 * 最新版本的安装
     ```shell
@@ -53,13 +57,13 @@ yum install docker-ce-<VERSION_STRING> docker-ce-cli-<VERSION_STRING> containerd
 
 ***
 
-##　启动docker
+**启动docker**
 
 ```shell
  sudo systemctl start docker
 ```
 
-## Hello-world
+**Hello-world**
 
 ```shell
 sudo docker run hello-world
@@ -89,15 +93,13 @@ docker version
 docker info
 ```
 
+## 创建示例工程
 
-
-##　创建示例工程
-
-### 代码编写
+**代码编写**
 
 <span id="code">https://github.com/docker/getting-started/tree/master/app</span>
 
-### 构建镜像
+**构建镜像**
 
 * 创建Dockerfile文件。Dockerfile文件不能有任何的后缀。（此例在package.json所在目录下创建Dockerfile文件）
 
@@ -122,7 +124,7 @@ docker build -t getting-started .
 
 ​	`-t` flag tags our image； 最后的 . 表示Dockerfile文件所在的目录是当前目录
 
-### 启动容器
+**启动容器**
 
 ```shell
 docker run -dp 3000:3000 getting-started
@@ -135,6 +137,8 @@ http://ip:3000 就可以启动应用了  （防火墙注意放开3000的端口�
 ## 更新示例工程
 
 **更新代码**
+
+...
 
 **重新构建**
 
