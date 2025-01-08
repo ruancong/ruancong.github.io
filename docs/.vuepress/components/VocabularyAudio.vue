@@ -1,6 +1,6 @@
 <template>
   <div class="flex items-center">
-    <span class="text-orange-500 text-5">{{ vocabulary }}</span>
+    <span>美音: </span>
     <div class="ml-2 text-orange-500 text-5 active:opacity-50" i-material-symbols-volume-up-rounded @click="togglePlay">
       <audio ref="audioElement" :src="audioUrl" style="display: none;"></audio>
     </div>
