@@ -1272,11 +1272,11 @@ tomcat:9-jdk8:包含 Tomcat 9 和 JDK 8,可以直接运行 Java 应用。所以,
 }
 ```
 
-## nexus 配置成私有docker register
+## Nexus 配置成私有docker register
 
  在Nexus上配置私有的Docker registry主要涉及到在Nexus端创建存储库，并在Docker端进行相应的配置以便能够推送和拉取镜像。以下是详细步骤：
 
-### Nexus端配置
+**Nexus端配置**
 
 1. **启动Nexus**: 使用Docker运行Nexus的命令如下：
 
@@ -1288,8 +1288,6 @@ tomcat:9-jdk8:包含 Tomcat 9 和 JDK 8,可以直接运行 Java 应用。所以,
 
 2. **创建Docker repository**: 登录Nexus后，找到创建repository的选项，选择`docker (hosted)`类型，输入名称和HTTP端口【如：18081】地址【后续docker login要用这个端口】。
 
-   > **Note**
-   >
    > A configured context-path for the user interface does not affect the repository connector URLs used by Docker. E.g. if your repository manager instance is configured to be available at `http://localhost:8081/nexus` instead of the default root context `http://localhost:8081/`, the URLs for your Docker repositories will still only use the configured port for the repository and omit the context path in the URL. This is a side-effect of the the fact that Docker does not support context paths in the registry API.
 
 3. **配置代理Docker repository** (如果需要): 由于安全原因，Docker push/pull时必须使用HTTPS协议。可以选择使用Nginx代理Nexus构建的Docker repository，配置SSL证书。
@@ -1303,12 +1301,11 @@ tomcat:9-jdk8:包含 Tomcat 9 和 JDK 8,可以直接运行 Java 应用。所以,
    >   "insecure-registries" : ["leite-dev:8081"]
    > }
    > ```
-
    > `systemctl daemon-reload; systemctl restart docker`
 
-4. 需要将18081透露出来
+4. **需要将18081透露出来**
 
-### Docker端配置
+**Docker端配置**
 
 1. **处理自签名证书问题**【http时忽略此步骤】: 如果使用自签名证书，Docker客户端默认不会信任它。解决方法是将证书添加到Docker的信任列表中：
 
@@ -1585,7 +1582,7 @@ docker service update --image <new_image> \
 
 > `--update-delay` 选项用于指定更新延迟时间，`--update-parallelism` 选项用于指定更新并行度。对服务执行`docker inspect <service_name or id> --pretty` 命令，会发现更新时对并行和延迟的设置已经成为服务定义的一部分了。这意味着，之后的更新操作将会自动使用这些设置，直到再次使用`docker service update` 命令覆盖它们。
 
-### 问题定位
+### Swarm日志查询
 
 可以通过查看日志来定位问题。
 
