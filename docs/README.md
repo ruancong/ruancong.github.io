@@ -14,7 +14,7 @@ sidebarDepth: 4
 * [问题解决纪录](./Backend/problem-solved/问题解决.md)
 #### docker
 * [docker](./Backend/docker/docker.md)
-
+* [Raft共识算法](./Backend/docker/raft.md)
 ### Frontend
 #### react
 * [react](./Frontend/react/react.md)

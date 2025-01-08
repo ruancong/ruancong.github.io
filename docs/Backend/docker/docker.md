@@ -1452,8 +1452,6 @@ Swarm 由一个或多个Docker节点组成，这些节点可以是物理服务�
      --listen-addr 10.0.0.1:2377
    ```
 
-   > [!NOTE]
-   >
    > `--advertise-addr` 指定其他节点用来连接到当前管理节点的IP和端口。这一属性是可选的，当节点上有多个IP时，可以用于指定使用哪个IP。
    >
    > `--listen-addr` 指定用于承载Swarm流量的IP和端口。其设置通常与--advertise-addr 相匹配，但是当节点上有多个IP的时候，可用于指定具体某个IP。
@@ -1478,15 +1476,34 @@ Swarm 由一个或多个Docker节点组成，这些节点可以是物理服务�
    
    ```
 
-   > [!NOTE]
-   >
    > 一个节点是作为工作节点还是管理节点接入，完全依赖于使用了哪个Token.
 
-   
+   (4) 加入节点
+
+   ```shell
+   docker swarm join --token <token> <manager-ip>:<port> \
+     --advertise-addr <node-ip> \
+     --listen-addr <node-ip>:<port>
+   ```
+   > * `<manager-ip>` 为管理节点的IP，其中--advertise-addr 和 --listen-addr 是可选的，当节点上有多个IP时，可以用于指定使用哪个IP，`<node-ip>` 为当前节点的IP。
+   >
+   > * 当token为工作节点时，则加入工作节点，当token为管理节点时，则加入管理节点。
+   >
+   > * 每次将节点加入Swarm都指定--advertise-addr 与--listen-addr 属性是痛苦的。然而，一旦Swarm中的网络配置出现问题将会更加痛苦。况且，手动将节点加入Swarm也不是一种日常操作，所以在执行该命令时额外指定这两个属性是值得的。
+
+   (5) 列出Swarm中的节点
+   在任意管理节点上执行
+
+   ```shell
+   docker node ls
+   ```
 
 2. **Swarm 管理器高可用性（HA）**：Swarm 的管理节点内置有对HA的支持，这意味着即使一个或多个节点发生故障，剩余管理节点也会继续保证Swarm的运转。
 
-   - Swarm 实现了一种主从方式的多管理节点的HA。
+   - Swarm 实现了一种主从方式的多管理节点的HA。这意味着，有多个管理节点，也总是仅有一个节点处于活动状态。通常处于活动状态的管理节点被称为“主节点”​（leader）​，而主节点也是唯一一个会对Swarm发送控制命令的节点。如果一个备用（非活动）管理节点接收到了Swarm命令，则它会将其转发给主节点。Swarm使用了Raft共识算法的一种具体实现来支持管理节点的HA
+
+   <img src="./images/Image00049.jpg" alt="Image00049" style="zoom:50%;" />
+
    - 最佳实践原则：
      - 部署奇数个管理节点。
      - 不要部署太多管理节点（建议3个或5个）。
