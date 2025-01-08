@@ -134,16 +134,16 @@ http://ip:3000 就可以启动应用了  （防火墙注意放开3000的端口�
 
 ## 更新示例工程
 
-### 更新代码
+**更新代码**
 
-### 重新构建
+**重新构建**
 
 ```shell
 ## 可以在最后增加:tagName
 docker build -t getting-started .
 ```
 
-### 停止旧版本
+**停止旧版本**
 
 ```shell
 ## 查找正在运行的旧版本的container id
@@ -160,7 +160,7 @@ docker stop <the-container-id>
 docker rm <the-container-id>
 ```
 
-### 重新启动
+**重新启动**
 
 ```shell
 docker run -dp 3000:3000 getting-started
@@ -273,12 +273,12 @@ docker logs [CONTAINER]
 
 因为容器之间是相互隔离的，两个容器之间要进行信息交互就得通过网络（两个容器需要在同一个网络一起）。There are two ways to put a container on a network: 1) Assign it at start or 2) connect an existing container.
 
-### 创建网络
+**创建网络**
 
 ```shell
  docker network create todo-app
 ```
-### 启动mysql 
+**启动mysql**
 
 启动mysql并连接到上一步创建的网络中
 
@@ -295,7 +295,7 @@ docker run -d  --network todo-app --network-alias mysql  -v todo-mysql-data:/var
 docker exec -it <mysql-container-id> mysql -u root -p
 ```
 
-### 寻找mysql容器的ip地址
+**寻找mysql容器的ip地址**
 
 mysql容器已经运行起来了，怎么找到mysql容器的ip地址呢（每个容器都有它自己的ip地址）？
 
@@ -320,7 +320,7 @@ mysql容器已经运行起来了，怎么找到mysql容器的ip地址呢（每�
   
   这条记录就是ip解析结果。虽然mysql不是一个正常的主机名，之所以能解析到是因为上一步的`--network-alias`设置了mysql。这使我们的app如果想连到mysql的话，这需要运用这个主机名`mysql`就可以。
 
-### 启动基于mysql的app
+**启动基于mysql的app**
 
 ```shell
 docker run -dp 3000:3000 \
@@ -348,7 +348,7 @@ docker run -dp 3000:3000 --network todo-app -e MYSQL_HOST=mysql -e MYSQL_USER=ro
 
 ## 使用docker-compose启动app 
 
-### 安装docker-compose
+**安装docker-compose**
 
 * 下载可执行文件 [release page](https://github.com/docker/compose/releases) 
 * 下载的文件重命名为docker-compose
@@ -356,7 +356,7 @@ docker run -dp 3000:3000 --network todo-app -e MYSQL_HOST=mysql -e MYSQL_USER=ro
 * 赋予可执行权限 `chmod +x /usr/bin/docker-compose`
 * 验证版本号 `docker-compose version`
 
-### 创建docker-compose.yml文件
+**创建docker-compose.yml文件**
 
 * 默认情况下，这个工程的名字是这个文件所在文件夹的名字
 
@@ -386,7 +386,7 @@ docker run -dp 3000:3000 --network todo-app -e MYSQL_HOST=mysql -e MYSQL_USER=ro
    services:
   ```
 
-### 定义自己应用的 service
+**定义自己应用的 service**
 
 * 定义第一个service名字(app)和镜像，其中service名字任意取，这个名字会自动成为一个network alias。这对我们定义mysql服务很有效
 
@@ -459,7 +459,7 @@ docker run -dp 3000:3000 --network todo-app -e MYSQL_HOST=mysql -e MYSQL_USER=ro
          MYSQL_DB: todos
   ```
 
-### 定义mysql service
+**定义mysql service**
 
 * 将mysql service 服务命名为mysql，这样自动生成的network alias也是mysql；指定mysql服务的镜像为mysql:5.7
 
@@ -512,7 +512,7 @@ docker run -dp 3000:3000 --network todo-app -e MYSQL_HOST=mysql -e MYSQL_USER=ro
      todo-mysql-data:
   ```
 
-### 完整的docker-compose.yml文件
+**完整的docker-compose.yml文件**
 
 ```yaml
 version: "3.7"
@@ -814,7 +814,7 @@ CMD ["nginx", "-g", "daemon off;"]
 
 ## Dockerfile 最佳实践
 
-### build context
+**build context**
 
 运行`docker build`命令的当前目录，默认情况下Dockerfile文件应该就在此目录下，也可以使用`-f` 参数来指定Dockerfile文件的位置，该目录及子目录都会被发送到Docker的daemon 来作为构建的上下文。
 
@@ -839,7 +839,7 @@ $ docker build --no-cache -t helloapp:v2 -f dockerfiles/Dockerfile context
 
 上述的Dockerfile所在的目录是`dockerfiles`，`context`是build context。
 
-### Pipe Dockerfile through `stdin`
+**Pipe Dockerfile through `stdin`**
 
 ```shell
 echo -e 'FROM busybox\nRUN echo "hello world"' | docker build -
@@ -852,7 +852,7 @@ RUN echo "hello world"
 EOF
 ```
 
-### Build an image using a Dockerfile from stdin, without sending build context
+**Build an image using a Dockerfile from stdin, without sending build context**
 
 ```shell
 docker build [OPTIONS] -
@@ -889,7 +889,7 @@ Step 2/3 : COPY somefile.txt ./
 COPY failed: stat /var/lib/docker/tmp/docker-builder249218248/somefile.txt: no such file or directory
 ```
 
-### Build from a local build context, using a Dockerfile from stdin
+**Build from a local build context, using a Dockerfile from stdin**
 
 ```shell
 docker build [OPTIONS] -f- PATH
@@ -911,7 +911,7 @@ RUN cat /somefile.txt
 EOF
 ```
 
-### Build from a remote build context, using a Dockerfile from stdin
+**Build from a remote build context, using a Dockerfile from stdin**
 
 ```shell
 docker build [OPTIONS] -f- PATH
@@ -926,20 +926,20 @@ EOF
 
 > When building an image using a remote Git repository as build context, Docker performs a `git clone` of the repository on the local machine, and sends those files as build context to the daemon. This feature requires `git` to be installed on the host where you run the `docker build` command.
 
-### Exclude with .dockerignore
+**Exclude with .dockerignore**
 
 将在build context内但不想发送到daemon 的文件可写在`.dockerignore`文件内
 
 This file supports exclusion patterns similar to `.gitignore` files. For information on creating one, see the [.dockerignore file](https://docs.docker.com/engine/reference/builder/#dockerignore-file).
 
-### Minimize the number of layers
+**Minimize the number of layers**
 
 In older versions of Docker, it was important that you minimized the number of layers in your images to ensure they were performant. The following features were added to reduce this limitation:
 
 - Only the instructions `RUN`, `COPY`, `ADD` create layers. Other instructions create temporary intermediate images, and do not increase the size of the build.
 - Where possible, use [multi-stage builds](https://docs.docker.com/develop/develop-images/multistage-build/), and only copy the artifacts you need into the final image. This allows you to include tools and debug information in your intermediate build stages without increasing the size of the final image.
 
-### Sort multi-line arguments
+**Sort multi-line arguments**
 
 Whenever possible, ease later changes by sorting multi-line arguments alphanumerically. （按字母顺序将命令排序）
 
@@ -996,7 +996,7 @@ LABEL vendor=ACME\ Incorporated \
 
 使用`\`把命令分成多行，便于阅读管理。RUN命令有些陷阱的地方
 
-#### apt-get
+**apt-get**
 
 Always combine `RUN apt-get update` with `apt-get install` in the same `RUN` statement.
 
@@ -1036,7 +1036,7 @@ RUN apt-get update && apt-get install -y \
  && rm -rf /var/lib/apt/lists/*
 ```
 
-#### Using pipes
+**Using pipes**
 
 ```dockerfile
 RUN wget -O - https://some.site | wc -l > /number
@@ -1235,7 +1235,7 @@ For clarity and reliability, you should always use absolute paths for your `WORK
 
 ## Build images with BuildKit
 
-### To enable BuildKit builds
+**To enable BuildKit builds**
 
 Easiest way from a fresh install of docker is to set the `DOCKER_BUILDKIT=1` environment variable when invoking the `docker build` command, such as:
 
