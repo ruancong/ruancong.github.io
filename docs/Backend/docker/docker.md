@@ -1574,6 +1574,17 @@ docker service rm <service_name or id>
 
 > 谨慎使用docker service rm 命令，因为它在删除所有服务副本时并不会进行确认。
 
+6. **滚动更新**
+
+```shell
+docker service update --image <new_image> \
+    --update-delay 10s \
+    --update-parallelism 2 \
+    <service_name or id>
+```
+
+> `--update-delay` 选项用于指定更新延迟时间，`--update-parallelism` 选项用于指定更新并行度。对服务执行`docker inspect <service_name or id> --pretty` 命令，会发现更新时对并行和延迟的设置已经成为服务定义的一部分了。这意味着，之后的更新操作将会自动使用这些设置，直到再次使用`docker service update` 命令覆盖它们。
+
 #### 问题定位
 
 可以通过查看日志来定位问题。
