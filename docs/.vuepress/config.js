@@ -4,6 +4,7 @@ import { viteBundler } from "@vuepress/bundler-vite";
 import { registerComponentsPlugin } from '@vuepress/plugin-register-components'
 import { fileURLToPath } from 'url'
 import { dirname, resolve } from 'path'
+import UnoCSS from '@unocss/vite'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
@@ -51,6 +52,9 @@ export default defineUserConfig({
           },
         ],
       },
+      plugins: [
+        UnoCSS(),
+      ],
     },
   }),
 });

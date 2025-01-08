@@ -1,5 +1,5 @@
 <template>
-  <span class="audio-player" @click="togglePlay">
+  <span class="audio-player ml-2" @click="togglePlay">
     <i class="fas fa-volume-up"></i>
     <audio ref="audioElement" :src="audioUrl" style="display: none;"></audio>
   </span>
@@ -31,7 +31,6 @@ const togglePlay = () => {
 <style scoped>
 .audio-player {
   cursor: pointer;
-  margin-left: 5px;
 }
 
 .fa-volume-up {
