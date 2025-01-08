@@ -1585,21 +1585,89 @@ docker service update --image <new_image> \
 
 > `--update-delay` 选项用于指定更新延迟时间，`--update-parallelism` 选项用于指定更新并行度。对服务执行`docker inspect <service_name or id> --pretty` 命令，会发现更新时对并行和延迟的设置已经成为服务定义的一部分了。这意味着，之后的更新操作将会自动使用这些设置，直到再次使用`docker service update` 命令覆盖它们。
 
-#### 问题定位
+### 问题定位
 
 可以通过查看日志来定位问题。
+
+```shell
+docker service logs <service_name or id>
+```
+
+输出日志`svc1.1.zhc3cjeti9d4@wrk-2 | [emerg] 1#1: host not found...`
+
+每一行开头为副本名称，其中包括服务名称、副本编号、副本ID以及所在的主机。如果服务没有启动成功，副本编号可能一直是1，直到服务成功启动。
 
 ### Docker Swarm 命令
 
 以下是一些常用的 Docker Swarm 命令：
 
-- `docker swarm init`：初始化 Swarm 集群。
-- `docker swarm join`：将节点加入 Swarm 集群。
-- `docker node ls`：列出 Swarm 集群中的节点。
-- `docker service create`：创建 Swarm 服务。
-- `docker service ls`：列出 Swarm 服务。
-- `docker service ps <service_name or id>`：列出 Swarm 服务中的容器。
-- `docker service inspect <service_name or id>`：查看 Swarm 服务详情。
-- `docker service scale <service_name or id>=<number_of_replicas> --pretty`：扩展 Swarm 服务。
-- `docker service logs <service_name or id>`：查看 Swarm 服务日志。
-- `docker stack deploy`：部署 Swarm Stack。
+
+**Swarm集群管理**
+```shell
+# 初始化Swarm集群
+docker swarm init --advertise-addr <MANAGER-IP>
+
+# 获取工作节点的加入命令
+docker swarm join-token worker
+
+# 获取管理节点的加入命令
+docker swarm join-token manager
+
+# 加入Swarm集群
+docker swarm join --token <TOKEN> <MANAGER-IP>:2377
+
+# 列出集群中的节点
+docker node ls
+```
+
+**服务管理**
+```shell
+# 创建服务
+docker service create --name <SERVICE-NAME> --replicas <N> <IMAGE>
+
+# 列出所有服务
+docker service ls
+
+# 查看服务详情
+docker service inspect <SERVICE-NAME> --pretty
+
+# 查看服务的任务/容器列表
+docker service ps <SERVICE-NAME>
+
+# 查看服务日志
+docker service logs <SERVICE-NAME>
+```
+
+**服务扩缩容和更新**
+```shell
+# 扩缩容服务
+docker service scale <SERVICE-NAME>=<NUMBER>
+
+# 更新服务
+docker service update \
+  --image <NEW-IMAGE> \
+  --update-delay 10s \
+  --update-parallelism 2 \
+  <SERVICE-NAME>
+
+# 删除服务
+docker service rm <SERVICE-NAME>
+```
+
+**节点管理**
+```shell
+# 将节点设置为维护模式
+docker node update --availability drain <NODE-ID>
+
+# 将节点恢复为活动状态
+docker node update --availability active <NODE-ID>
+
+# 从Swarm中删除节点
+docker node rm <NODE-ID>
+
+# 提升工作节点为管理节点
+docker node promote <NODE-ID>
+
+# 降级管理节点为工作节点
+docker node demote <NODE-ID>
+```
