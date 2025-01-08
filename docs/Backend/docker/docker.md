@@ -1519,9 +1519,60 @@ Swarm 由一个或多个Docker节点组成，这些节点可以是物理服务�
    - 请确保将解锁码妥善保管在安全的地方[忘记解锁码](./forget-lock-psw.md)
    - 如果管理节点重启，则需要使用`docker swarm unlock`命令来解锁集群
 
-#### 部署 Swarm 服务
+### Swarm 服务
 
-Swarm 中的最小调度单元是服务，它是随 Swarm 引入的，在API中是一个新的对象元素，它基于容器封装了一些高级特性。
+Swarm 中的最小调度单元是服务，它是随 Swarm 引入的，在API中是一个新的对象元素，它基于容器封装了一些高级特性。服务仅适用于Swarm模式。
+ 
+1. **创建服务**
+
+使用服务仍能够配置大多数熟悉的容器属性，比如容器名、端口映射、接入网络和镜像。`--replicas` 选项用于指定服务需要运行的副本数量。
+
+```shell
+docker service create --name my_service --replicas 3 --publish 8080:80 nginx
+```
+ 
+2. **查看服务**
+
+查看Swarm中的所有的服务
+```shell
+docker service ls
+```
+
+查看某个服务的副本及状态
+```shell
+docker service ps <service_name or id>
+```
+
+查看某个服务的更详细的信息
+```shell
+docker service inspect <service_name or id>
+``` 
+> 可以使用`--pretty`选项来格式化输出
+
+3. **副本服务VS全局服务**
+
+- 副本服务：
+服务的默认是副本模式（replicated ）​。这种模式会部署期望数量的服务副本，并尽可能均匀地将各个副本分布在整个集群中。
+
+- 全局服务：
+全局模式（global ）​，在这种模式下，每个节点上仅运行一个副本。可以通过给`docker service create`命令传递`--mode global`参数来部署一个全局服务。
+
+4. **服务的扩缩容**
+
+```shell
+docker service scale <service_name or id>=<number_of_replicas>
+```
+通过这个命令可以扩展或缩减服务。
+
+> 在底层实现上，Swarm执行了一个调度算法，默认将副本尽量均衡分配给Swarm中的所有节点
+
+5. **删除服务**
+
+```shell
+docker service rm <service_name or id>
+```
+
+> 谨慎使用docker service rm 命令，因为它在删除所有服务副本时并不会进行确认。
 
 #### 问题定位
 
@@ -1536,6 +1587,8 @@ Swarm 中的最小调度单元是服务，它是随 Swarm 引入的，在API中�
 - `docker node ls`：列出 Swarm 集群中的节点。
 - `docker service create`：创建 Swarm 服务。
 - `docker service ls`：列出 Swarm 服务。
-- `docker service scale`：扩展 Swarm 服务。
-- `docker service logs`：查看 Swarm 服务日志。
+- `docker service ps <service_name or id>`：列出 Swarm 服务中的容器。
+- `docker service inspect <service_name or id>`：查看 Swarm 服务详情。
+- `docker service scale <service_name or id>=<number_of_replicas> --pretty`：扩展 Swarm 服务。
+- `docker service logs <service_name or id>`：查看 Swarm 服务日志。
 - `docker stack deploy`：部署 Swarm Stack。
