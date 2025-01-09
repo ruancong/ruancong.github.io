@@ -12,6 +12,7 @@
   },
   "devDependencies": {
     "@iconify-json/material-symbols": "^1.2.12",
+    "@iconify-json/si": "^1.2.3",
     "@unocss/preset-attributify": "^0.58.5",
     "@unocss/preset-icons": "^0.58.5",
     "@unocss/preset-uno": "^0.58.5",
