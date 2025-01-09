@@ -24,10 +24,10 @@
   <div v-if="mediaIsLoading">
     <p class="text-orange-500">加载中...</p>
   </div>
-  <div v-else>
+  <div v-else-if="isMore">
     <div v-if="videoUrl">
       <p>视频讲解：</p>
-      <video width="460" :src="videoUrl" controls></video>
+      <video class="max-w-95% w-420px" :src="videoUrl" controls></video>
     </div>
     <div v-if="picDict">
       <p>图片讲解：</p>
@@ -54,6 +54,7 @@ const audioUrl = `https://dict.youdao.com/dictvoice?type=1&audio=${vocabulary}`;
 
 const mediaIsLoading = ref(false);
 const isMore = ref(false);
+const isMediaLoaded = ref(false);
 // 单词相关视频地址
 const videoUrl = ref(null);
 // 单词相关图片地址
@@ -70,15 +71,16 @@ const togglePlay = () => {
 
 const toggleMore = async () => {
   isMore.value = !isMore.value;
-  if (!isMore.value) {
-    return;
+  
+  // Only load media if it hasn't been loaded before
+  if (!isMediaLoaded.value && isMore.value) {
+    mediaIsLoading.value = true;
+    const response = await getWordInfo(vocabulary);
+    console.log(response);
+    videoUrl.value = response.word_video?.word_videos[0]?.video?.url;
+    picDict.value = response.pic_dict?.pic[0]?.url;
+    mediaIsLoading.value = false;
+    isMediaLoaded.value = true;
   }
-
-  mediaIsLoading.value = true;
-  const response = await getWordInfo(vocabulary);
-  console.log(response);
-  videoUrl.value = response.word_video?.word_videos[0]?.video?.url;
-  picDict.value = response.pic_dict?.pic[0]?.url;
-  mediaIsLoading.value = false;
 };
 </script>
