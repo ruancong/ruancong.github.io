@@ -25,7 +25,10 @@
     <p class="text-orange-500">加载中...</p>
   </div>
   <div v-else-if="isMore">
-    <div v-if="videoUrl">
+    <div v-if="isNoMediaData">
+      <p class="text-orange-500">{{ noDataTip }}</p>
+    </div>
+    <div v-else-if="videoUrl">
       <p>视频讲解：</p>
       <video class="max-w-95% w-420px" :src="videoUrl" controls></video>
     </div>
@@ -37,7 +40,7 @@
 </template>
 
 <script setup>
-import { ref, defineProps } from "vue";
+import { ref, defineProps, computed } from "vue";
 import { getWordInfo } from "../api/youdaoDicApi";
 
 const { vocabulary } = defineProps({
@@ -60,12 +63,21 @@ const videoUrl = ref(null);
 // 单词相关图片地址
 const picDict = ref(null);
 
+// 没有数据的提示
+const noDataTip = ref("此单词暂无多媒体数据");
+
+// 此单词没有多媒体数据
+const isNoMediaData = computed(() => {
+  return !videoUrl.value && !picDict.value && isMediaLoaded.value;
+});
+
 const togglePlay = () => {
   if (audioElement.value.paused) {
     audioElement.value.play();
   } else {
     audioElement.value.pause();
-    audioElement.value.currentTime = 0; // 重置到开始位置
+    // 重置到开始位置
+    audioElement.value.currentTime = 0; 
   }
 };
 
@@ -75,12 +87,22 @@ const toggleMore = async () => {
   // Only load media if it hasn't been loaded before
   if (!isMediaLoaded.value && isMore.value) {
     mediaIsLoading.value = true;
-    const response = await getWordInfo(vocabulary);
-    console.log(response);
-    videoUrl.value = response.word_video?.word_videos[0]?.video?.url;
-    picDict.value = response.pic_dict?.pic[0]?.url;
-    mediaIsLoading.value = false;
-    isMediaLoaded.value = true;
+    try {
+      const response = await getWordInfo(vocabulary);
+      console.log(response);
+      videoUrl.value = response.word_video?.word_videos[0]?.video?.url;
+      picDict.value = response.pic_dict?.pic[0]?.url;
+    } catch (error) {
+      if (error instanceof TypeError && error.message === 'Failed to fetch') {
+        noDataTip.value = "你的网络可能需要梯子";
+      } else {
+        noDataTip.value = "获取单词信息失败";
+      }
+    } finally {
+      mediaIsLoading.value = false;
+      isMediaLoaded.value = true;
+    }
   }
 };
 </script>
+ 
