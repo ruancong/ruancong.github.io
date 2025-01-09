@@ -12,5 +12,12 @@ export const WORD_MEDIA = {
     skeleton: {
         videoUrl: "https://luna-dict-community.nosdn.127.net/3BTuNFmY_4733477590_shd.mp4",
         picUrl: "https://ydlunacommon-cdn.nosdn.127.net/9e4c49da6740120a6f6667a6b24a5972.jpg"
+    },
+    estimate: {
+        videoUrl: "https://luna-dict-community.nosdn.127.net/lnbPzrSk_4733462937_shd.mp4",
+        picUrl: "https://ydlunacommon-cdn.nosdn.127.net/03242f4420b5e56b36213a5d036fb00c.jpg"
+    },
+    resume: {
+        videoUrl: "https://luna-dict-community.nosdn.127.net/ylUpAch5_4733468602_shd.mp4",
     }
 }
