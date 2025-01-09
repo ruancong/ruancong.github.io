@@ -28,14 +28,15 @@
     <div v-if="isNoMediaData">
       <p class="text-orange-500">{{ noDataTip }}</p>
     </div>
-    <div v-else-if="videoUrl">
+     <div v-else-if="picUrl">
+      <p>图片示意：</p>
+      <img class="max-w-200px max-h-150px" :src="picUrl" alt="图片示意" />
+    </div>
+    <div v-if="videoUrl">
       <p>视频讲解：</p>
       <video class="max-w-95% w-420px" :src="videoUrl" controls></video>
     </div>
-    <div v-if="picDict">
-      <p>图片讲解：</p>
-      <img class="max-w-200px" :src="picDict" alt="图片讲解" />
-    </div>
+   
   </div>
 </template>
 
@@ -61,14 +62,14 @@ const isMediaLoaded = ref(false);
 // 单词相关视频地址
 const videoUrl = ref(null);
 // 单词相关图片地址
-const picDict = ref(null);
+const picUrl = ref(null);
 
 // 没有数据的提示
 const noDataTip = ref("此单词暂无多媒体数据");
 
 // 此单词没有多媒体数据
 const isNoMediaData = computed(() => {
-  return !videoUrl.value && !picDict.value && isMediaLoaded.value;
+  return !videoUrl.value && !picUrl.value && isMediaLoaded.value;
 });
 
 const togglePlay = () => {
@@ -89,9 +90,8 @@ const toggleMore = async () => {
     mediaIsLoading.value = true;
     try {
       const response = await getWordInfo(vocabulary);
-      console.log(response);
-      videoUrl.value = response.word_video?.word_videos[0]?.video?.url;
-      picDict.value = response.pic_dict?.pic[0]?.url;
+      videoUrl.value = response.videoUrl;
+      picUrl.value = response.picUrl;
     } catch (error) {
       if (error instanceof TypeError && error.message === 'Failed to fetch') {
         noDataTip.value = "你的网络可能需要梯子";
