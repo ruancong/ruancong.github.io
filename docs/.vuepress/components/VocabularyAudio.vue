@@ -1,5 +1,5 @@
 <template>
-  <h4>单词多媒体信息:</h4>
+  <h3 class="mb-4!">单词多媒体信息:</h3>
   <div class="flex items-center">
     <span>美音: </span>
     <div
@@ -28,7 +28,7 @@
     <div v-if="isNoMediaData">
       <p class="text-orange-500">{{ noDataTip }}</p>
     </div>
-     <div v-else-if="picUrl">
+    <div v-else-if="picUrl">
       <p>图片示意：</p>
       <img class="max-w-200px max-h-150px" :src="picUrl" alt="图片示意" />
     </div>
@@ -36,7 +36,6 @@
       <p>视频讲解：</p>
       <video class="max-w-95% w-420px" :src="videoUrl" controls></video>
     </div>
-   
   </div>
 </template>
 
@@ -78,13 +77,13 @@ const togglePlay = () => {
   } else {
     audioElement.value.pause();
     // 重置到开始位置
-    audioElement.value.currentTime = 0; 
+    audioElement.value.currentTime = 0;
   }
 };
 
 const toggleMore = async () => {
   isMore.value = !isMore.value;
-  
+
   // Only load media if it hasn't been loaded before
   if (!isMediaLoaded.value && isMore.value) {
     mediaIsLoading.value = true;
@@ -93,7 +92,7 @@ const toggleMore = async () => {
       videoUrl.value = response.videoUrl;
       picUrl.value = response.picUrl;
     } catch (error) {
-      if (error instanceof TypeError && error.message === 'Failed to fetch') {
+      if (error instanceof TypeError && error.message === "Failed to fetch") {
         noDataTip.value = "你的网络可能需要梯子";
       } else {
         noDataTip.value = "获取单词信息失败";
@@ -105,4 +104,3 @@ const toggleMore = async () => {
   }
 };
 </script>
- 

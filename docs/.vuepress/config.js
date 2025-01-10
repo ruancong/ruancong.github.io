@@ -10,7 +10,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 
 export default defineUserConfig({
   lang: "en-US",
-  title: "NOTES",
+  title: "Notes",
   description: "Daily Learning Notes",
   head: [["link", { rel: "icon", href: "/images/logo.svg" }]],
   theme: defaultTheme({
