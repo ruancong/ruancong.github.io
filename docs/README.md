@@ -29,6 +29,15 @@ sidebarDepth: 4
 [句子结构与时态](./English/English-grammar/English-Grammar.md)
 [英语句子解析](./English/English-grammar/英语句子解析.md)
 ### 单词
+
+#### 2025
+
+##### January
+
+* [01-10](./English/daily-words/2025/January/01-10.md)
+* [01-08](./English/daily-words/2025/January/01-08.md)
+* [01-03](./English/daily-words/2025/January/01-03.md)
+
 #### 2024
 
 ##### May
@@ -38,9 +47,4 @@ sidebarDepth: 4
 * [05-22](./English/daily-words/2024/May/05-22.md)
 * [05-23](./English/daily-words/2024/May/05-23.md)
 
-#### 2025
 
-##### January
-
-* [01-03](./English/daily-words/2025/January/01-03.md)
-* [01-08](./English/daily-words/2025/January/01-08.md)
