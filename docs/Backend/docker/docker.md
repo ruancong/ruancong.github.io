@@ -1427,7 +1427,9 @@ Swarm 由一个或多个Docker节点组成，这些节点可以是物理服务�
 
 1. **初始化一个全新的Swarm**：不包含在任何Swarm中的Docker节点，称为运行于单引擎（Single-Engine）模式。一旦被加入Swarm集群，则切换为Swarm模式。
 
-   <img src="./images/image-20250107095044943.png" alt="image-20250107095044943" style="zoom:50%;" />
+    <div style="text-align: center;">
+        <img src="./images/image-20250107095044943.png" alt="image-20250107095044943" style="zoom:50%;" />
+    </div>
 
    (1) 初始化 Swarm 集群命令：
 
@@ -1487,7 +1489,9 @@ Swarm 由一个或多个Docker节点组成，这些节点可以是物理服务�
 
    - Swarm 实现了一种主从方式的多管理节点的HA。这意味着，有多个管理节点，也总是仅有一个节点处于活动状态。通常处于活动状态的管理节点被称为“主节点”​（leader）​，而主节点也是唯一一个会对Swarm发送控制命令的节点。如果一个备用（非活动）管理节点接收到了Swarm命令，则它会将其转发给主节点。Swarm使用了[Raft共识算法](./raft.md)的一种具体实现来支持管理节点的HA
 
-   <img src="./images/Image00049.jpg" alt="Image00049" style="zoom:50%;" />
+   <div style="text-align: center;">
+        <img src="./images/Image00049.jpg" alt="Image00049" style="zoom:50%;" />
+    </div>
 
    - 最佳实践原则：
      - 部署奇数个管理节点。
@@ -1684,7 +1688,7 @@ Libnetwork 实现了基本的**服务发现**和基本容器负载均衡。
 
 本节内容分为基础知识、单主机桥接网络、多主机覆盖网络、连接到现有网络、服务发现和 Ingress 网络。
 
-#### 基础知识
+#### **基础知识**
 
 **在最高级别，Docker 网络架构由三部分组成：CNM、Libnetwork 和驱动程序。**
 
@@ -1697,11 +1701,15 @@ Libnetwork 实现了基本的**服务发现**和基本容器负载均衡。
         
         三个元素组合图【CNM】:
         
-        <img src="./images/Image00054.jpg" alt="Image00054" style="zoom:50%;" />
+        <div style="text-align: center;">
+            <img src="./images/Image00054.jpg" alt="Image00054" style="zoom:50%;" />
+        </div>
         
         CNM组件与容器进行关联:
         
-        <img src="./images/Image00055.jpg" alt="Image00055" style="zoom:50%;" />
+        <div style="text-align: center;">
+            <img src="./images/Image00055.jpg" alt="Image00055" style="zoom:50%;" />
+        </div>
         
         ::: note
 
@@ -1713,7 +1721,9 @@ Libnetwork 实现了基本的**服务发现**和基本容器负载均衡。
 
         加入Docker主机：
 
-        <img src="./images/Image00056.jpg" alt="Image00056" style="zoom:40%;" />
+        <div style="text-align: center;">
+            <img src="./images/Image00056.jpg" alt="Image00056" style="zoom:40%;" />
+        </div>
         
         ::: note
         
@@ -1727,17 +1737,46 @@ Libnetwork 实现了基本的**服务发现**和基本容器负载均衡。
         *   Docker 将网络代码从守护进程中分离出来，并将其重构到一个名为 Libnetwork 的外部库中。
         *   Libnetwork 实现了 CNM 中指定的所有三个组件。它还实现了本机服务发现、基于 Ingress 的容器负载均衡以及网络控制和管理功能。
         
-    *   **驱动程序** 扩展了此模型的功能，方法是实现特定的网络拓扑。
+    *   **驱动程序**  如果说Libnetwork实现了控制层和管理层功能，那么驱动就负责实现数据层。比如，网络连通性和隔离性是由驱动来处理的。
     
         *   Docker 包括多个内置驱动程序，通常称为本机或本地驱动程序，包括用于 Linux 的 Bridge、Overlay 和 Macvlan，以及用于 Windows 的 NAT、Overlay、传输和 L2Bridge。
         *   第三方还可以编写 Docker 网络驱动程序。这些被称为远程驱动程序。示例包括 Calico、Contiv、Kuryr 和 Weave。
-#### 单主机桥接网络
 
-最简单的 Docker 网络是单主机桥接网络。顾名思义，这种类型的网络仅在单个 Docker 主机上运行，并且只能连接到同一主机上的容器。
+        控制层、管理层与数据层的关系:
+        
+        <div style="text-align: center;">
+            <img src="./images/Image00057.jpg" alt="Image00057" style="zoom:50%;" />
+        </div>
 
-**Linux Docker 使用内置的 Bridge 驱动程序创建单主机桥接网络。** **Windows Docker 使用内置的 NAT 驱动程序来创建它们。**
+#### **单主机桥接网络**
 
-#### 多主机覆盖网络
+最简单的 Docker 网络是单主机桥接网络。顾名思义，这种类型的网络仅在单个 Docker 主机上运行，并且只能连接到同一主机上的容器。除非通过命令行创建容器时指定参数--network ，否则默认情况下，新创建的容器都会连接到该网络。不同主机内的容器之间无法通过单主机桥接网络进行通信。
+
+<div style="text-align: center;">
+    <img src="./images/Image00058.jpg" alt="Image00058" style="zoom:50%;" />
+</div>
+
+:::note
+
+Linux Docker 使用内置的 Bridge 驱动程序创建单主机桥接网络。 Windows Docker 使用内置的 NAT 驱动程序来创建它们。
+
+:::
+
+刚完成安装的Docker主机, 默认会创建一个“bridge”【名字不一定叫bridge】网络。
+Docker默认“bridge”网络和Linux内核中的“docker0”网桥之间的关系如图:
+
+<div style="text-align: center;">
+    <img src="./images/Image00059.jpg" alt="Image00059" style="zoom:50%;" />
+</div>
+
+在顶部补充了接入“bridge”网络的容器。​“bridge”网络在主机内核中映射到名为“docker0”的Linux网桥，该网桥可以通过主机以太网接口的端口映射进行反向关联。[ethx](../network/network-basis.md#linux系统中-以太网接口的命名)
+
+<div style="text-align: center;">
+    <img src="./images/Image00060.jpg" alt="Image00060" style="zoom:50%;" />
+</div>
+
+
+#### **多主机覆盖网络**
 
 在现实世界中，跨不同主机上的不同网络的容器之间的可靠且安全的通信非常重要。覆盖网络允许用户创建安全的扁平二层网络，以连接多个主机。
 
@@ -1745,17 +1784,17 @@ Libnetwork 实现了基本的**服务发现**和基本容器负载均衡。
 
 **Docker 覆盖网络使用 VXLAN 来连接网络。**
 
-#### 连接到现有网络
+#### **连接到现有网络**
 
 **Macvlan 驱动程序（在 Windows 中为透明）允许容器连接到现有的物理网络和 VLAN。** 它通过为容器提供 MAC 和 IP 地址，使其成为网络上的“一等公民”。
 
 **此驱动程序要求主机的 NIC 支持混杂模式。** 这意味着无法在大多数公共云上使用此驱动程序。
 
-#### 服务发现
+#### **服务发现**
 
 Libnetwork 包含对基本服务发现的支持。
 
-#### Ingress 网络
+#### **Ingress 网络**
 
 Docker 还包含一个服务网格，支持对入站流量进行基于容器的负载均衡。
 
