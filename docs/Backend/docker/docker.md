@@ -1775,20 +1775,71 @@ Docker默认“bridge”网络和Linux内核中的“docker0”网桥之间的�
     <img src="./images/Image00060.jpg" alt="Image00060" style="zoom:50%;" />
 </div>
 
+创建新的网络
+```shell
+docker network create -d bridge localnet
+```
+
+创建新的容器跑在上面创建的网络上
+```shell
+ docker container run -d --name c1 \
+  --network localnet \
+  alpine sleep 1d
+```
+
+如果在相同网络中继续接入新的容器，那么在新接入容器中是可以通过“c1”的容器名称来ping通的。这是因为新容器都注册到了指定的Docker DNS服务
+
+:::warning
+Linux上默认的Bridge网络是不支持通过Docker DNS服务进行域名解析的。自定义桥接网络可以！
+:::
+
 
 #### **多主机覆盖网络**
 
 在现实世界中，跨不同主机上的不同网络的容器之间的可靠且安全的通信非常重要。覆盖网络允许用户创建安全的扁平二层网络，以连接多个主机。
 
-**Docker 通过 Libnetwork 和驱动程序提供对原生覆盖网络的支持。**
+**Docker 通过 Libnetwork 和驱动程序(overlay)提供对原生覆盖网络的支持。**
 
 **Docker 覆盖网络使用 VXLAN 来连接网络。**
 
 #### **连接到现有网络**
 
-**Macvlan 驱动程序（在 Windows 中为透明）允许容器连接到现有的物理网络和 VLAN。** 它通过为容器提供 MAC 和 IP 地址，使其成为网络上的“一等公民”。
+**Macvlan 驱动程序（在 Windows 中为透明）允许容器连接到现有的物理网络和 VLAN。** 它通过为容器提供 MAC 和 IP 地址，使其成为网络上的“一等公民”。示意图如下
+
+<div style="text-align: center;">
+    <img src="./images/Image00065.jpg" alt="Image00065" style="zoom:50%;" />
+</div>
 
 **此驱动程序要求主机的 NIC 支持混杂模式。** 这意味着无法在大多数公共云上使用此驱动程序。
+
+创建Macvlan网络
+```shell
+docker network create -d macvlan \
+  --subnet=10.0.0.0/24 \
+  --ip-range=10.0.00/25 \
+  --gateway=10.0.0.1 \
+  -o parent=eth0.100 \
+  macvlan100
+```
+
+创建容器跑在上面创建的网络上
+```shell
+docker container run -d --name mactainer1 \
+  --network macvlan100 \
+  alpine sleep 1d
+```
+
+此时的网络示意图如下
+
+<div style="text-align: center;">
+    <img src="./images/Image00069.jpg" alt="Image00069" style="zoom:50%;" />
+</div>
+
+:::warning
+
+如果上述命令不能执行，可能是因为主机NIC不支持混杂模式。切记公有云平台不允许混杂模式
+
+:::
 
 #### **服务发现**
 
