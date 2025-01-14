@@ -1,5 +1,7 @@
 ---
 title: Docker
+description: docker学习,docker零基础教程,docker学习笔记
+keywords: docker, docker学习, docker零基础教程
 ---
 
 ## 安装docker engine [CentOS]
@@ -1711,7 +1713,7 @@ Libnetwork 实现了基本的**服务发现**和基本容器负载均衡。
 
         加入Docker主机：
 
-        <img src="./images/Image00056.jpg" alt="Image00056" style="zoom:50%;" />
+        <img src="./images/Image00056.jpg" alt="Image00056" style="zoom:40%;" />
         
         ::: note
         
