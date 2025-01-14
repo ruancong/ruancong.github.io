@@ -264,10 +264,46 @@ docker run -w /app -v "$(pwd):/app" node:16-alpine sh -c "npm config set registr
 
 ***
 
-## 看容器日志
+## Docker Daemon日志
+
+来查看docker daemon的日志
+
+```shell
+journalctl -u docker.service
+```
+还可以在docker的配置文件daemon.json中指定日志文件
+
+```json
+{
+  <Snip>
+  "debug":true,
+  "log-level":"debug",
+  <Snip>
+}
+```
+
+## 容器日志
 
 ```shell
 docker logs [CONTAINER]
+```
+
+每个Docker主机也为容器提供了默认的日志驱动以及配置。其中包括json-file （默认）、journald （只在运行systemd 的Linux主机中生效）、syslog 、splunk 和gelf。
+
+json-file 和journald 可能是较容易配置的，并且均可通过doker logs 和docker service logs 命令查看。其他日志驱动，可以通过第三方平台提供的原生工具进行查看。
+
+配置其它的日志驱动：
+
+```json
+{
+  "log-driver": "syslog"
+}
+```
+
+可以为某个容器或者服务配置单独的日志策略，只需在启动容器时指定日志驱动，这样就会覆盖daemon.json中的配置。
+
+```shell
+docker run --log-driver=syslog -d nginx
 ```
 
 ## 基于多个容器的app
@@ -1847,7 +1883,15 @@ Libnetwork 包含对基本服务发现的支持。
 
 #### **Ingress 网络**
 
-Docker 还包含一个服务网格，支持对入站流量进行基于容器的负载均衡。
+Docker 还包含一个服务网格，支持对入站流量进行基于容器的负载均衡。在底层，Ingress模式采用名为Service Mesh 或者SwarmMode Service Mesh 的四层路由网络来实现。
+
+Ingress模式下访问服务:
+
+<div style="text-align: center;">
+    <img src="./images/Image00073.jpg" alt="Image00073" style="zoom:50%;" />
+</div>
+
+图中最上方命令部署了一个名为“svc1”的Swarm服务。该服务连接到了overnet 网络，并发布到5000端口。集群确保到达Ingress网络中任意节点 的5000端口的流量，都会被路由到80端口的“svc1”服务。
 
 ### Docker 网络——命令
 
