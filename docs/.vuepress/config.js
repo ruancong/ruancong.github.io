@@ -50,6 +50,9 @@ export default defineUserConfig({
         ],
       },
       plugins: [UnoCSS()],
+      server: {
+        port: 3000,
+      },
     },
   }),
 });

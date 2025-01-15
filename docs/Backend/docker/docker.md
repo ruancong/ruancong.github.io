@@ -1834,9 +1834,38 @@ Linux上默认的Bridge网络是不支持通过Docker DNS服务进行域名解�
 
 在现实世界中，跨不同主机上的不同网络的容器之间的可靠且安全的通信非常重要。覆盖网络允许用户创建安全的扁平二层网络，以连接多个主机。
 
-**Docker 通过 Libnetwork 和驱动程序(overlay)提供对原生覆盖网络的支持。**
+:::note
+
+Docker 覆盖网络的创建是为了解决容器之间跨网络通信的问题，而不是为了解决节点加入 swarm 集群的问题。
+
+Swarm 集群的管理节点和工作节点之间使用的是标准的 TCP 协议进行通信，默认端口为 2377。
+
+只要工作节点能够通过 IP 网络访问到管理节点上的该端口，它就可以成功加入集群。
+
+:::
 
 **Docker 覆盖网络使用 VXLAN 来连接网络。**
+
+VXLAN 是 Virtual Extensible LAN 的缩写，中文译为虚拟可扩展局域网。
+VXLAN 是一种网络虚拟化技术，允许您在现有三层网络上创建虚拟二层网络。 它通过在 UDP 数据包中封装以太网帧来实现这一点，从而使您能够在不同的物理位置上的主机之间扩展二层网络。 Docker 使用 VXLAN 隧道技术来创建虚拟二层覆盖网络。VXLAN隧道两端都是VXLAN隧道终端（VXLAN TunnelEndpoint, VTEP）​。VTEP完成了封装和解压的步骤。
+
+VXLAN设计图
+
+<div style="text-align: center;">
+    <img src="./images/Image00079.jpg" alt="Image00079" style="zoom:50%;" />
+</div>
+
+不同主机的VTEP创建覆盖网络：
+
+<div style="text-align: center;">
+    <img src="./images/Image00080.jpg" alt="Image00080" style="zoom:40%;" />
+</div>
+
+以太网（veth ）适配器接入本地Br0虚拟交换机:
+
+<div style="text-align: center;">
+    <img src="./images/Image00081.jpg" alt="Image00081" style="zoom:40%;" />
+</div>
 
 #### **连接到现有网络**
 
