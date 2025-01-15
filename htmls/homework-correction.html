@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>作业批改系统</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: Arial, sans-serif;
+        padding: 20px;
+        background-color: #f0f0f0;
+      }
+
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        background-color: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+
+      .tools {
+        margin-bottom: 20px;
+        display: flex;
+        gap: 10px;
+        align-items: center;
+      }
+
+      .color-picker {
+        width: 40px;
+        height: 40px;
+        padding: 0;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+
+      .button {
+        padding: 8px 16px;
+        border: none;
+        border-radius: 4px;
+        background-color: #4caf50;
+        color: white;
+        cursor: pointer;
+        font-size: 14px;
+      }
+
+      .button:hover {
+        background-color: #45a049;
+      }
+
+      .button.clear {
+        background-color: #f44336;
+      }
+
+      .button.clear:hover {
+        background-color: #da190b;
+      }
+
+      .canvas-container {
+        position: relative;
+        margin-bottom: 20px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        overflow: hidden;
+      }
+
+      canvas {
+        position: absolute;
+        top: 0;
+        left: 0;
+        cursor: crosshair;
+      }
+
+      .preview-container {
+        margin-top: 20px;
+      }
+
+      .preview-container img {
+        max-width: 100%;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+      }
+
+      .size-control {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .size-control input {
+        width: 100px;
+      }
+
+      .size-control span {
+        min-width: 30px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="tools">
+        <input
+          type="color"
+          class="color-picker"
+          id="colorPicker"
+          value="#ff0000"
+        />
+        <div class="size-control">
+          <input type="range" id="sizeSlider" min="1" max="20" value="2" />
+          <span id="sizeValue">2px</span>
+        </div>
+        <button class="button" id="mergeButton">合并图层</button>
+        <button class="button" id="downloadButton">下载图片</button>
+        <button class="button clear" id="clearButton">清除批改</button>
+      </div>
+      <div class="canvas-container" id="canvasContainer"></div>
+      <div class="preview-container" id="previewContainer"></div>
+    </div>
+
+    <script>
+      class CanvasImageMerger {
+        constructor(container) {
+          this.container = container;
+          this.setupCanvases();
+          this.setupDrawingState();
+          this.bindEvents();
+        }
+
+        setupCanvases() {
+          // 底图 canvas
+          this.baseCanvas = document.createElement("canvas");
+          this.baseContext = this.baseCanvas.getContext("2d");
+          this.baseCanvas.style.position = "absolute";
+
+          // 绘制 canvas
+          this.drawingCanvas = document.createElement("canvas");
+          this.drawingContext = this.drawingCanvas.getContext("2d");
+          this.drawingCanvas.style.position = "absolute";
+
+          this.container.appendChild(this.baseCanvas);
+          this.container.appendChild(this.drawingCanvas);
+        }
+
+        setupDrawingState() {
+          this.isDrawing = false;
+          this.lastX = 0;
+          this.lastY = 0;
+          this.drawingContext.strokeStyle = "#ff0000";
+          this.drawingContext.lineWidth = 2;
+          this.drawingContext.lineCap = "round";
+          this.drawingContext.lineJoin = "round";
+        }
+
+        bindEvents() {
+          const events = {
+            mouse: {
+              down: "mousedown",
+              move: "mousemove",
+              up: "mouseup",
+              leave: "mouseleave",
+            },
+            touch: {
+              down: "touchstart",
+              move: "touchmove",
+              up: "touchend",
+              leave: "touchcancel",
+            },
+          };
+
+          for (const type of Object.values(events)) {
+            this.drawingCanvas.addEventListener(type.down, (e) =>
+              this.startDrawing(e)
+            );
+            this.drawingCanvas.addEventListener(type.move, (e) => this.draw(e));
+            this.drawingCanvas.addEventListener(type.up, () =>
+              this.stopDrawing()
+            );
+            this.drawingCanvas.addEventListener(type.leave, () =>
+              this.stopDrawing()
+            );
+          }
+        }
+
+        startDrawing(e) {
+          this.isDrawing = true;
+          const pos = this.getEventPosition(e);
+          [this.lastX, this.lastY] = [pos.x, pos.y];
+        }
+
+        draw(e) {
+          if (!this.isDrawing) return;
+          e.preventDefault();
+
+          const pos = this.getEventPosition(e);
+          this.drawLine(this.lastX, this.lastY, pos.x, pos.y);
+          [this.lastX, this.lastY] = [pos.x, pos.y];
+        }
+
+        stopDrawing() {
+          this.isDrawing = false;
+        }
+
+        getEventPosition(e) {
+          const rect = this.drawingCanvas.getBoundingClientRect();
+          if (e.touches) {
+            return {
+              x: e.touches[0].clientX - rect.left,
+              y: e.touches[0].clientY - rect.top,
+            };
+          }
+          return {
+            x: e.clientX - rect.left,
+            y: e.clientY - rect.top,
+          };
+        }
+
+        drawLine(startX, startY, endX, endY) {
+          this.drawingContext.beginPath();
+          this.drawingContext.moveTo(startX, startY);
+          this.drawingContext.lineTo(endX, endY);
+          this.drawingContext.stroke();
+          this.drawingContext.closePath();
+        }
+
+        async loadImage(url) {
+          return new Promise((resolve, reject) => {
+            const img = new Image();
+            img.crossOrigin = "anonymous";
+            img.onload = () => {
+              // 设置画布尺寸
+              this.baseCanvas.width = img.width;
+              this.baseCanvas.height = img.height;
+              this.drawingCanvas.width = img.width;
+              this.drawingCanvas.height = img.height;
+
+              // 设置容器尺寸
+              this.container.style.width = img.width + "px";
+              this.container.style.height = img.height + "px";
+
+              // 绘制原始图片
+              this.baseContext.drawImage(img, 0, 0);
+              resolve(img);
+            };
+            img.onerror = reject;
+            img.src = url;
+          });
+        }
+
+        setColor(color) {
+          this.drawingContext.strokeStyle = color;
+        }
+
+        setLineWidth(width) {
+          this.drawingContext.lineWidth = width;
+        }
+
+        clearDrawing() {
+          this.drawingContext.clearRect(
+            0,
+            0,
+            this.drawingCanvas.width,
+            this.drawingCanvas.height
+          );
+        }
+
+        mergeImages() {
+          const mergedCanvas = document.createElement("canvas");
+          mergedCanvas.width = this.baseCanvas.width;
+          mergedCanvas.height = this.baseCanvas.height;
+          const ctx = mergedCanvas.getContext("2d");
+
+          // 绘制底图
+          ctx.drawImage(this.baseCanvas, 0, 0);
+          // 绘制批改层
+          ctx.drawImage(this.drawingCanvas, 0, 0);
+
+          return mergedCanvas.toDataURL("image/png");
+        }
+      }
+
+      // 初始化应用
+      const init = async () => {
+        const container = document.getElementById("canvasContainer");
+        const merger = new CanvasImageMerger(container);
+
+        // 加载示例图片（这里使用占位图，实际使用时替换为真实图片URL）
+        await merger.loadImage(
+          "https://www.claudeusercontent.com/api/placeholder/800/600"
+        );
+
+        // 颜色选择器
+        const colorPicker = document.getElementById("colorPicker");
+        // 设置批改画笔初始颜色
+        merger.setColor(colorPicker.value);
+        // 监听颜色选择器的变化
+        colorPicker.addEventListener("input", (e) => {
+          merger.setColor(e.target.value);
+        });
+
+        // 线条粗细控制
+        const sizeSlider = document.getElementById("sizeSlider");
+        const sizeValue = document.getElementById("sizeValue");
+        sizeSlider.addEventListener("input", (e) => {
+          const size = e.target.value;
+          sizeValue.textContent = size + "px";
+          merger.setLineWidth(size);
+        });
+
+        // 合并按钮
+        const mergeButton = document.getElementById("mergeButton");
+        mergeButton.addEventListener("click", () => {
+          const mergedImageUrl = merger.mergeImages();
+          const previewContainer = document.getElementById("previewContainer");
+          previewContainer.innerHTML = "";
+
+          const img = document.createElement("img");
+          img.src = mergedImageUrl;
+          previewContainer.appendChild(img);
+        });
+
+        // 下载按钮
+        const downloadButton = document.getElementById("downloadButton");
+        downloadButton.addEventListener("click", () => {
+          const mergedImageUrl = merger.mergeImages();
+
+          // 创建一个临时的a标签用于下载
+          const link = document.createElement("a");
+          link.download = "批改结果.png"; // 设置下载文件名
+          link.href = mergedImageUrl;
+          link.click();
+        });
+
+        // 清除按钮
+        const clearButton = document.getElementById("clearButton");
+        clearButton.addEventListener("click", () => {
+          merger.clearDrawing();
+        });
+      };
+
+      // 启动应用
+      init().catch(console.error);
+    </script>
+  </body>
+</html>
