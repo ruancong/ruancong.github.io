@@ -34,6 +34,7 @@ sidebarDepth: 4
 
 ##### January
 
+* [01-15](./English/daily-words/2025/January/01-15.md)
 * [01-10](./English/daily-words/2025/January/01-10.md)
 * [01-08](./English/daily-words/2025/January/01-08.md)
 * [01-03](./English/daily-words/2025/January/01-03.md)

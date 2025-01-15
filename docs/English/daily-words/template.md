@@ -1,11 +1,11 @@
 ## emulate
 
+<VocabularyAudio vocabulary="emulate" />
+
 ### 音标
 
 - 美 /ˈem.jə.leɪt/
 - 英 /ˈem.jʊ.leɪt/
-
-<VocabularyAudio vocabulary="emulate" />
 
 ### 中文释义
  v. 模仿，效仿；与…竞争；努力赶上或超越
