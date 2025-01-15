@@ -298,6 +298,9 @@
 
         // 颜色选择器
         const colorPicker = document.getElementById("colorPicker");
+        // 设置批改画笔初始颜色
+        merger.setColor(colorPicker.value);
+        // 监听颜色选择器的变化
         colorPicker.addEventListener("input", (e) => {
           merger.setColor(e.target.value);
         });
