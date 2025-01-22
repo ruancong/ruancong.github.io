@@ -43,20 +43,24 @@
       }
 
       .action-bar {
+        padding: 10px;
+        display: flex;
+        justify-content: space-around;
+        background: #fff;
+        margin-top: 10px;
+      }
+
+      .action-bar.fixed {
         position: fixed;
         bottom: 0;
         left: 0;
         right: 0;
-        background: #fff;
-        padding: 10px;
         box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
-        display: flex;
-        justify-content: space-around;
         transform: translateY(100%);
         transition: transform 0.3s ease;
       }
 
-      .action-bar.visible {
+      .action-bar.fixed.visible {
         transform: translateY(0);
       }
 
@@ -146,6 +150,20 @@
           </p>
         </div>
         <span class="read-more">阅读全文 ></span>
+        <div class="action-bar">
+          <div class="action-item">
+            <span>👍 赞同 99</span>
+          </div>
+          <div class="action-item">
+            <span>💬 13 条评论</span>
+          </div>
+          <div class="action-item">
+            <span>⭐ 收藏</span>
+          </div>
+          <div class="action-item">
+            <span>❤️ 喜欢</span>
+          </div>
+        </div>
       </div>
 
       <!-- 第二篇文章 -->
@@ -175,6 +193,20 @@
           </p>
         </div>
         <span class="read-more">阅读全文 ></span>
+        <div class="action-bar">
+          <div class="action-item">
+            <span>👍 赞同 4.1万</span>
+          </div>
+          <div class="action-item">
+            <span>💬 2,359 条评论</span>
+          </div>
+          <div class="action-item">
+            <span>⭐ 收藏</span>
+          </div>
+          <div class="action-item">
+            <span>❤️ 喜欢</span>
+          </div>
+        </div>
       </div>
 
       <!-- 第三篇文章 -->
@@ -201,6 +233,20 @@
           </p>
         </div>
         <span class="read-more">阅读全文 ></span>
+        <div class="action-bar">
+          <div class="action-item">
+            <span>👍 赞同</span>
+          </div>
+          <div class="action-item">
+            <span>💬 评论</span>
+          </div>
+          <div class="action-item">
+            <span>⭐ 收藏</span>
+          </div>
+          <div class="action-item">
+            <span>❤️ 喜欢</span>
+          </div>
+        </div>
       </div>
 
       <!-- 第四篇文章 -->
@@ -224,9 +270,24 @@
           </p>
         </div>
         <span class="read-more">阅读全文 ></span>
+        <div class="action-bar">
+          <div class="action-item">
+            <span>👍 赞同</span>
+          </div>
+          <div class="action-item">
+            <span>💬 评论</span>
+          </div>
+          <div class="action-item">
+            <span>⭐ 收藏</span>
+          </div>
+          <div class="action-item">
+            <span>❤️ 喜欢</span>
+          </div>
+        </div>
       </div>
 
-      <div class="action-bar">
+      <!-- 固定在底部的操作栏 -->
+      <div class="action-bar fixed">
         <div class="action-item">
           <span>👍 赞同</span>
         </div>
@@ -245,47 +306,46 @@
     <script>
       document.querySelectorAll(".read-more").forEach((button) => {
         button.addEventListener("click", function () {
-          // 先收起其他所有展开的文章
-          document
-            .querySelectorAll(".article-content.expanded")
-            .forEach((content) => {
-              if (content !== this.previousElementSibling) {
-                content.classList.remove("expanded");
-                content.nextElementSibling.textContent = "阅读全文 >";
-              }
-            });
-
           const content = this.previousElementSibling;
-          const actionBar = document.querySelector(".action-bar");
+          const fixedActionBar = document.querySelector(".action-bar.fixed");
 
           content.classList.toggle("expanded");
           if (content.classList.contains("expanded")) {
             this.textContent = "收起 ∧";
-            actionBar.classList.add("visible");
+            fixedActionBar.classList.add("visible");
           } else {
             this.textContent = "阅读全文 >";
-            actionBar.classList.remove("visible");
+            // 只有当没有任何展开的文章时，才隐藏固定操作栏
+            if (!document.querySelector(".article-content.expanded")) {
+              fixedActionBar.classList.remove("visible");
+            }
           }
         });
       });
 
-      // 简化后的滚动监听
+      // 滚动监听
       window.addEventListener("scroll", function () {
-        const actionBar = document.querySelector(".action-bar");
-        const expandedContent = document.querySelector(
+        const fixedActionBar = document.querySelector(".action-bar.fixed");
+        const expandedContents = document.querySelectorAll(
           ".article-content.expanded"
         );
 
-        if (expandedContent) {
-          const contentBottom = expandedContent.getBoundingClientRect().bottom;
+        // 检查所有展开的文章
+        let shouldShowActionBar = false;
+        expandedContents.forEach((content) => {
+          const contentBottom = content.getBoundingClientRect().bottom;
           const windowHeight = window.innerHeight;
 
-          // 只控制操作栏的显示/隐藏
-          if (contentBottom <= windowHeight) {
-            actionBar.classList.remove("visible");
-          } else {
-            actionBar.classList.add("visible");
+          // 如果任何一个展开的文章还没滚动到底部，就显示操作栏
+          if (contentBottom > windowHeight) {
+            shouldShowActionBar = true;
           }
+        });
+
+        if (shouldShowActionBar) {
+          fixedActionBar.classList.add("visible");
+        } else {
+          fixedActionBar.classList.remove("visible");
         }
       });
     </script>
