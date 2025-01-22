@@ -48,6 +48,17 @@
         justify-content: space-around;
         background: #fff;
         margin-top: 10px;
+        opacity: 1;
+        transition: opacity 0.3s ease;
+        height: auto;
+      }
+
+      .action-bar.hide {
+        opacity: 0;
+        height: 0;
+        padding: 0;
+        margin: 0;
+        pointer-events: none;
       }
 
       .action-bar.fixed {
@@ -304,20 +315,75 @@
     </div>
 
     <script>
+      // 更新固定操作栏数据的函数
+      function updateFixedActionBar(articleActionBar) {
+        const fixedActionBar = document.querySelector(".action-bar.fixed");
+        // 复制数据到固定操作栏
+        const actionItems = articleActionBar.querySelectorAll(".action-item");
+        const fixedActionItems =
+          fixedActionBar.querySelectorAll(".action-item");
+
+        actionItems.forEach((item, index) => {
+          fixedActionItems[index].innerHTML = item.innerHTML;
+        });
+      }
+
+      // 更新操作栏显示状态的函数
+      function updateActionBarsVisibility(showFixed = false) {
+        const fixedActionBar = document.querySelector(".action-bar.fixed");
+        const expandedContents = document.querySelectorAll(
+          ".article-content.expanded"
+        );
+        const windowHeight = window.innerHeight;
+
+        // 处理固定操作栏
+        if (showFixed) {
+          fixedActionBar.classList.add("visible");
+        } else {
+          fixedActionBar.classList.remove("visible");
+        }
+
+        // 处理每篇展开文章的操作栏
+        expandedContents.forEach((content) => {
+          const articleActionBar =
+            content.nextElementSibling.nextElementSibling;
+          const contentBottom = content.getBoundingClientRect().bottom;
+          const nextArticle = content.closest(".article").nextElementSibling;
+
+          // 如果文章底部在视窗内，或者下一篇文章的顶部也在视窗内，显示当前文章的操作栏
+          if (
+            contentBottom <= windowHeight ||
+            (nextArticle &&
+              nextArticle.getBoundingClientRect().top <= windowHeight)
+          ) {
+            articleActionBar.classList.remove("hide");
+          } else {
+            articleActionBar.classList.add("hide");
+          }
+        });
+      }
+
       document.querySelectorAll(".read-more").forEach((button) => {
         button.addEventListener("click", function () {
           const content = this.previousElementSibling;
-          const fixedActionBar = document.querySelector(".action-bar.fixed");
+          const articleActionBar = this.nextElementSibling;
 
           content.classList.toggle("expanded");
           if (content.classList.contains("expanded")) {
             this.textContent = "收起 ∧";
-            fixedActionBar.classList.add("visible");
+
+            const contentHeight = content.scrollHeight;
+            const windowHeight = window.innerHeight;
+            const contentTop = content.getBoundingClientRect().top;
+
+            if (contentHeight + contentTop > windowHeight) {
+              updateFixedActionBar(articleActionBar);
+              updateActionBarsVisibility(true);
+            }
           } else {
             this.textContent = "阅读全文 >";
-            // 只有当没有任何展开的文章时，才隐藏固定操作栏
             if (!document.querySelector(".article-content.expanded")) {
-              fixedActionBar.classList.remove("visible");
+              updateActionBarsVisibility(false);
             }
           }
         });
@@ -325,27 +391,42 @@
 
       // 滚动监听
       window.addEventListener("scroll", function () {
-        const fixedActionBar = document.querySelector(".action-bar.fixed");
         const expandedContents = document.querySelectorAll(
           ".article-content.expanded"
         );
+        const windowHeight = window.innerHeight;
 
-        // 检查所有展开的文章
-        let shouldShowActionBar = false;
+        let shouldShowFixedBar = false;
+        let visibleExpandedContent = null;
+
         expandedContents.forEach((content) => {
+          const contentHeight = content.scrollHeight;
+          const contentTop = content.getBoundingClientRect().top;
           const contentBottom = content.getBoundingClientRect().bottom;
-          const windowHeight = window.innerHeight;
 
-          // 如果任何一个展开的文章还没滚动到底部，就显示操作栏
-          if (contentBottom > windowHeight) {
-            shouldShowActionBar = true;
+          // 找到当前主要可见的展开文章
+          if (contentTop < windowHeight && contentBottom > 0) {
+            visibleExpandedContent = content;
+          }
+
+          // 判断是否需要显示固定操作栏
+          if (
+            contentHeight + contentTop > windowHeight &&
+            contentBottom > windowHeight &&
+            contentTop < 0
+          ) {
+            // 添加这个条件确保文章正在被阅读
+            shouldShowFixedBar = true;
           }
         });
 
-        if (shouldShowActionBar) {
-          fixedActionBar.classList.add("visible");
+        if (shouldShowFixedBar && visibleExpandedContent) {
+          const articleActionBar =
+            visibleExpandedContent.nextElementSibling.nextElementSibling;
+          updateFixedActionBar(articleActionBar);
+          updateActionBarsVisibility(true);
         } else {
-          fixedActionBar.classList.remove("visible");
+          updateActionBarsVisibility(false);
         }
       });
     </script>
