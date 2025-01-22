@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="zh">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>文章列表</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      .container {
+        max-width: 800px;
+        margin: 20px auto;
+        padding: 0 15px;
+      }
+
+      .article {
+        background: #fff;
+        padding: 20px;
+        margin-bottom: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+
+      .article-content {
+        max-height: 100px;
+        overflow: hidden;
+        transition: max-height 0.3s ease;
+      }
+
+      .article-content.expanded {
+        max-height: 2000px;
+      }
+
+      .read-more {
+        color: #1a73e8;
+        cursor: pointer;
+        margin-top: 10px;
+        display: inline-block;
+      }
+
+      .action-bar {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: #fff;
+        padding: 10px;
+        box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+        display: flex;
+        justify-content: space-around;
+        transform: translateY(100%);
+        transition: transform 0.3s ease;
+      }
+
+      .action-bar.visible {
+        transform: translateY(0);
+      }
+
+      .action-item {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        color: #666;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="article">
+        <h2>为什么有些人习惯性对父母「报喜不报忧」？</h2>
+        <div class="article-content">
+          <p>解释这个心理现象前，需要先说三个基础概念。</p>
+          <p>
+            第一，心理母体。我们都说父母之爱是无私的，但无私和无目的性并不是一回事。
+          </p>
+          <p>
+            父母是孩子生理和心理上的母体，但孩子其实也是父母的心理母体，父母同样需要依赖子女亲密关系来保证自己精神的稳定存在。
+          </p>
+          <p>
+            因为我们的自我意识是在人际互动的镜映中形成的，这导致我们需要不断援引来自外界的信息来确认自己的存在，这其中以人际回应为最重要的信息。
+          </p>
+
+          <p>
+            第二，情感需求。每个人都有被理解、被认可的需求，这种需求在亲子关系中尤为明显。
+          </p>
+          <p>
+            当我们遇到困难或挫折时，往往会本能地寻求父母的支持和理解。但同时，我们也担心会给父母带来不必要的担忧和压力。这种矛盾的心理状态，使得很多人选择了"报喜不报忧"的沟通方式。
+          </p>
+
+          <p>第三，自我保护。"报喜不报忧"某种程度上也是一种自我保护机制。</p>
+          <p>
+            当我们选择只分享好消息时，不仅能够维持父母眼中那个"优秀的孩子"形象，也能避免因分享糟糕的经历而不得不面对父母的过度关心或干预。这种选择性的信息分享，实际上是在维护自己的独立性和自主权。
+          </p>
+
+          <p>基于以上三个概念，我们可以更深入地理解"报喜不报忧"这一现象：</p>
+
+          <p>1. 角色期待的压力</p>
+          <p>
+            在传统家庭文化中，父母往往对子女抱有很高期待。为了不辜负这种期待，子女会倾向于展示自己的成功和进步，而隐藏失败和困境。这种选择性展示不仅是为了维护父母的期待，也是为了保护自己的自尊。
+          </p>
+
+          <p>2. 情感依赖与独立的矛盾</p>
+          <p>
+            成年后的子女往往面临着一个矛盾：既渴望获得父母的情感支持，又希望维持自己的独立性。"报喜不报忧"成为了一种折中的方案，既能维持与父母的情感联系，又不会过度依赖或被干预。
+          </p>
+
+          <p>3. 代际沟通的障碍</p>
+          <p>
+            不同代际之间的生活经验和价值观差异，有时会导致沟通障碍。年轻人可能觉得父母不能理解自己的烦恼，或者担心分享困境后会收到过时的建议，因此选择避而不谈。
+          </p>
+
+          <p>4. 双向保护机制</p>
+          <p>
+            这种行为模式既是对自己的保护，也是对父母的保护。子女不想因为自己的困境给父母增添烦恼，尤其是当父母年纪渐长时，这种保护心理会更加明显。
+          </p>
+
+          <p>5. 社会压力的影响</p>
+          <p>
+            在当今竞争激烈的社会中，很多人承受着巨大的压力。但由于传统文化中"不给家里添麻烦"的观念，他们选择独自承担这些压力，只在取得成功时才与父母分享。
+          </p>
+
+          <p>如何改善这种状况？</p>
+
+          <p>1. 建立开放的沟通氛围</p>
+          <p>
+            父母可以主动创造轻松的交流环境，表达对子女的无条件支持，减少评判和指责。
+          </p>
+
+          <p>2. 尊重边界</p>
+          <p>
+            双方都需要学会尊重对方的边界，父母要适度关心而不是过度干预，子女也要学会适度分享而不是完全封闭。
+          </p>
+
+          <p>3. 调整期待</p>
+          <p>
+            父母需要调整对子女的期待，接纳子女的不完美；子女也要学会接纳自己的失败和挫折，不必过分追求完美。
+          </p>
+
+          <p>结语：</p>
+          <p>
+            "报喜不报忧"这种现象反映了当代亲子关系中的复杂性。它既是一种保护机制，也是一种沟通障碍。只有双方都努力创造理解和信任的氛围，才能建立更健康的亲子关系。
+          </p>
+        </div>
+        <span class="read-more">阅读全文 ></span>
+      </div>
+
+      <!-- 第二篇文章 -->
+      <div class="article">
+        <h2>为什么百度贴吧还不凉？</h2>
+        <div class="article-content">
+          <p>
+            你们看小说，那我跟你们说个东西，百度有个贴吧叫阅读吧，多年通吧，人家自己开发了一款应用，不在任何应用市场售卖，这个应用类似于一个壳子，一...
+          </p>
+          <p>
+            贴吧的生命力在于它的社区属性。它不仅仅是一个简单的论坛，而是一个基于共同兴趣的社交平台。
+          </p>
+          <p>
+            首先，贴吧的分类机制非常细致。无论是大众话题还是小众爱好，都能找到自己的"组织"。这种精细化的分类让用户能够快速找到志同道合的人。
+          </p>
+          <p>
+            其次，贴吧的门槛相对较低。不需要复杂的注册流程，用户可以快速加入讨论。这种低门槛的特性让更多人愿意参与进来。
+          </p>
+          <p>
+            第三，贴吧形成了独特的文化。每个吧都有自己的规则、黑话和梗，这种独特的文化认同感让用户更容易产生归属感。
+          </p>
+          <p>
+            第四，贴吧的运营相对宽松。虽然有基本的管理规则，但用户有较大的发挥空间，这让社区能够自然发展。
+          </p>
+          <p>
+            最后，贴吧积累了大量的历史内容。很多老帖子包含着珍贵的经验和记忆，这些内容持续吸引着新用户。
+          </p>
+        </div>
+        <span class="read-more">阅读全文 ></span>
+      </div>
+
+      <!-- 第三篇文章 -->
+      <div class="article">
+        <h2>如何看待当代年轻人的职业选择？</h2>
+        <div class="article-content">
+          <p>
+            当代年轻人的职业选择呈现出多元化的特点，这与社会发展和价值观的变迁密切相关。
+          </p>
+          <p>
+            首先，年轻人更注重工作与生活的平衡。不同于上一代人单纯追求高收入，现在的年轻人更看重工作环境、发展空间和个人时间。
+          </p>
+          <p>
+            其次，新兴职业的出现为年轻人提供了更多选择。比如内容创作者、数字游民等，这些在十年前难以想象的职业现在已经成为常态。
+          </p>
+          <p>
+            第三，终身学习成为必需。快速变化的社会环境要求年轻人具备持续学习的能力，单一技能已经不足以应对职业生涯的挑战。
+          </p>
+          <p>
+            此外，创业精神在年轻人中间盛行。得益于互联网的发展，创业门槛降低，使得更多年轻人愿意尝试自主创业。
+          </p>
+          <p>
+            但这也带来了一些问题：就业压力增大、行业竞争激烈、工作不稳定性增加等。这需要年轻人在选择职业时更加慎重。
+          </p>
+        </div>
+        <span class="read-more">阅读全文 ></span>
+      </div>
+
+      <!-- 第四篇文章 -->
+      <div class="article">
+        <h2>人工智能会取代人类工作吗？</h2>
+        <div class="article-content">
+          <p>
+            人工智能对就业市场的影响是一个复杂的话题，需要从多个角度来分析。
+          </p>
+          <p>
+            从历史经验来看，技术革新确实会取代某些工作岗位，但同时也会创造新的就业机会。工业革命就是一个很好的例子。
+          </p>
+          <p>
+            AI确实可能取代一些重复性、程序化的工作，但创造力、情感交流、决策判断等需要人类独特能力的工作仍然难以替代。
+          </p>
+          <p>
+            更可能的情况是，AI将成为人类的助手，提高工作效率，让人类能够专注于更有创造性和更有价值的工作。
+          </p>
+          <p>
+            因此，与其担心被AI取代，不如思考如何与AI协同工作，提升自己的核心竞争力。
+          </p>
+        </div>
+        <span class="read-more">阅读全文 ></span>
+      </div>
+
+      <div class="action-bar">
+        <div class="action-item">
+          <span>👍 赞同</span>
+        </div>
+        <div class="action-item">
+          <span>💬 评论</span>
+        </div>
+        <div class="action-item">
+          <span>⭐ 收藏</span>
+        </div>
+        <div class="action-item">
+          <span>❤️ 喜欢</span>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      document.querySelectorAll(".read-more").forEach((button) => {
+        button.addEventListener("click", function () {
+          // 先收起其他所有展开的文章
+          document
+            .querySelectorAll(".article-content.expanded")
+            .forEach((content) => {
+              if (content !== this.previousElementSibling) {
+                content.classList.remove("expanded");
+                content.nextElementSibling.textContent = "阅读全文 >";
+              }
+            });
+
+          const content = this.previousElementSibling;
+          const actionBar = document.querySelector(".action-bar");
+
+          content.classList.toggle("expanded");
+          if (content.classList.contains("expanded")) {
+            this.textContent = "收起 ∧";
+            actionBar.classList.add("visible");
+          } else {
+            this.textContent = "阅读全文 >";
+            actionBar.classList.remove("visible");
+          }
+        });
+      });
+
+      // 简化后的滚动监听
+      window.addEventListener("scroll", function () {
+        const actionBar = document.querySelector(".action-bar");
+        const expandedContent = document.querySelector(
+          ".article-content.expanded"
+        );
+
+        if (expandedContent) {
+          const contentBottom = expandedContent.getBoundingClientRect().bottom;
+          const windowHeight = window.innerHeight;
+
+          // 只控制操作栏的显示/隐藏
+          if (contentBottom <= windowHeight) {
+            actionBar.classList.remove("visible");
+          } else {
+            actionBar.classList.add("visible");
+          }
+        }
+      });
+    </script>
+  </body>
+</html>
