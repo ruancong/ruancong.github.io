@@ -1,7 +1,8 @@
 ---
 title: MinIO
 description: MinIO学习 
-keywords: MinIO, MinIO学习 
+keywords: MinIO, MinIO学习
+sidebarDepth: 2
 ---
 
 ## 单节点-单驱动安装 MinIO
@@ -118,6 +119,67 @@ Command-line: https://min.io/docs/minio/linux/reference/minio-mc.html
 
 Documentation: https://min.io/docs/minio/linux/index.html
 ```
+
+#### 4. Connect to the MinIO Service
+
+* Console
+
+访问 `http://192.168.2.100:9001`
+
+账号密码为环境变量文件中设置的 `MINIO_ROOT_USER` 和 `MINIO_ROOT_PASSWORD`
+
+* Command-line
+
+    1. 安装 `mc` 命令行工具
+
+    ```bash
+    curl https://dl.min.io/client/mc/release/linux-amd64/mc \
+    --create-dirs \
+    -o $HOME/minio-binaries/mc
+
+    chmod +x $HOME/minio-binaries/mc
+    export PATH=$PATH:$HOME/minio-binaries/
+
+    mc --help
+    ```
+    > 要注意下载相应处理器平台的 `mc` 命令行工具
+
+    2. 设置别名
+
+    ```bash
+    mc alias set myminio http://192.168.2.100:9000 myminioadmin minio-secret-key-change-me
+    ```
+    > 设置好对应的账号与密码
+
+    3. 测试alias是否设置成功
+
+    ```bash
+    mc ls myminio/mybucket
+    ```
+
+## 集群安装 MinIO
+
+A cluster refers to an entire MinIO deployment consisting of one or more Server Pools.
+
+Consider the command below that creates a cluster consisting of two Server Pools, each with 4 minio server nodes and 4 drives per node for a total of 32 drives.
+
+```bash
+minio server https://minio{1...4}.example.net/mnt/disk{1...4} \
+             https://minio{5...8}.example.net/mnt/disk{1...4}
+
+             |                    Server Pool                |
+
+```
+
+:::note
+Once you create a server pool you cannot change its size, but you can add or remove capacity at any time by adding or decommissioning pools.
+:::
+
+
+
+
+
+
 
 
 

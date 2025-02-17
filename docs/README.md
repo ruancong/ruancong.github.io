@@ -30,8 +30,8 @@ sidebarDepth: 4
 ## 英语
 
 ### 语法
-[句子结构与时态](./English/English-grammar/English-Grammar.md)
-[英语句子解析](./English/English-grammar/英语句子解析.md)
+* [句子结构与时态](./English/English-grammar/English-Grammar.md)
+* [英语句子解析](./English/English-grammar/英语句子解析.md)
 ### 单词
 
 #### 2025
