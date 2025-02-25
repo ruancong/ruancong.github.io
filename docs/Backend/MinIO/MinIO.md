@@ -136,10 +136,10 @@ Documentation: https://min.io/docs/minio/linux/index.html
     curl https://dl.min.io/client/mc/release/linux-amd64/mc \
     --create-dirs \
     -o $HOME/minio-binaries/mc
-
+    
     chmod +x $HOME/minio-binaries/mc
     export PATH=$PATH:$HOME/minio-binaries/
-
+    
     mc --help
     ```
     > 要注意下载相应处理器平台的 `mc` 命令行工具
@@ -175,12 +175,25 @@ minio server https://minio{1...4}.example.net/mnt/disk{1...4} \
 Once you create a server pool you cannot change its size, but you can add or remove capacity at any time by adding or decommissioning pools.
 :::
 
+## Core concepts
 
+### 什么是纠删码（Erasure Coding）？
 
+纠删码是一种数据保护技术，用于在分布式存储系统中确保数据的可靠性和可用性。它将数据分割成多个片段（称为数据分片，data shards），并生成额外的校验分片（parity shards），这些校验分片可以用来恢复丢失的数据。MinIO 使用 Reed-Solomon 纠删码算法来实现这一点。在 MinIO 中，纠删码的配置通常以“EC:N”的形式表示，其中：
 
+EC 是“Erasure Coding”（纠删码）的缩写。
+N 表示校验分片（parity shards）的数量。
 
+在 MinIO 的分布式部署中，所有的驱动器会被分成一个或多个纠删集。一个纠删集通常包含多个驱动器（例如 16 个驱动器）。
 
+<img src="./images/availability-erasure-sharding.svg" alt="availability-erasure-sharding" style="width:800px" />
 
+> This small one-node deployment has 16 drives in one erasure set. Assuming default [parity](https://min.io/docs/minio/linux/operations/concepts/erasure-coding.html#minio-ec-parity) *of* `EC:4`, MinIO partitions the object into 4 (four) parity shards and 12 (twelve) data shards. MinIO distributes these shards evenly across each drive in the erasure set.
 
+MinIO 的默认纠删码配置是 **EC:4**，也就是说，对于存储的每个对象，MinIO 会将其分割成若干数据分片，并额外生成 4 个校验分片。纠删集的大小决定了数据分片和校验分片的总和。例如，一个有 16 个驱动器的纠删集，在 EC:4 配置下，会有 12 个数据分片（16 - 4 = 12）和 4 个校验分片。
 
+### Deployment Architecture
 
+![architecture-erasure-set-shard](./images/architecture-erasure-set-shard.svg)
+
+> With the maximum parity of `EC:8`, MinIO shards the object into 8 data and 8 parity blocks, distributing them across the drives in the erasure set. All erasure sets in this pool have the same stripe size and shard distribution.
