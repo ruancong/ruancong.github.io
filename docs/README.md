@@ -43,6 +43,10 @@ sidebarDepth: 4
 * [01-08](./English/daily-words/2025/January/01-08.md)
 * [01-03](./English/daily-words/2025/January/01-03.md)
 
+##### February
+
+* [02-26](./English/daily-words/2025/February/02-26.md)
+
 #### 2024
 
 ##### May
