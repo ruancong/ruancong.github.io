@@ -1436,6 +1436,12 @@ fi
 >
 > 
 
+## 查询正在运行的容器的环境变量
+
+```shell
+docker exec -it <container_id> env
+```
+
 ## Docker Swarm
 
 ### Docker Swarm 简介
