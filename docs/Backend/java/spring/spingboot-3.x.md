@@ -16,6 +16,33 @@ Core changes
 
   Spring Boot 2.7 [introduced](https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-2.7-Release-Notes#changes-to-auto-configuration) a new `META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports` file for registering auto-configurations, while maintaining backwards compatibility with registration in `spring.factories`. With this release, support for registering auto-configurations in `spring.factories` using the `org.springframework.boot.autoconfigure.EnableAutoConfiguration` key has been removed in favor of the imports file. Other entries in `spring.factories` under other keys are unaffected.
 
+* Spring MVC and WebFlux URL Matching Changes
+
+  以前的版本中， "GET /some/greeting/" 与 "GET /some/greeting" 会被匹配到同一个handler。
+  ```java
+  @RestController
+    public class MyController {
+
+    @GetMapping("/some/greeting")
+    public String greeting() {
+        return "Hello";
+    }
+  }
+  ```
+
+  但是在3.x中，只有 "GET /some/greeting" 会被匹配到, "GET /some/greeting/" 为404。
+
+  如果需要兼容这个这两个路径匹配到一个handler， 可以配置
+  ```java
+    @Configuration
+    public class WebConfiguration implements WebMvcConfigurer {
+
+        @Override
+        public void configurePathMatch(PathMatchConfigurer configurer) {
+        configurer.setUseTrailingSlashMatch(true);
+        }
+    }
+  ```
 
 
 ### `@Import` 、`@ImportResource`
