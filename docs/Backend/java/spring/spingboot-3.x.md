@@ -22,7 +22,7 @@ Core changes
   ```java
   @RestController
     public class MyController {
-
+  
     @GetMapping("/some/greeting")
     public String greeting() {
         return "Hello";
@@ -36,7 +36,7 @@ Core changes
   ```java
     @Configuration
     public class WebConfiguration implements WebMvcConfigurer {
-
+  
         @Override
         public void configurePathMatch(PathMatchConfigurer configurer) {
         configurer.setUseTrailingSlashMatch(true);
@@ -444,6 +444,35 @@ springboot中内置的分组
 > Since logging is initialized **before** the `ApplicationContext` is created, it is not possible to control logging from `@PropertySources` in Spring `@Configuration` files. The only way to change the logging system or disable it entirely is through System properties.
 
 用 logback 时，using logback-spring.xml rather than logback.xml
+
+#### File Output
+
+`logging.file.name` 和 `logging.file.path` 可以设置日志文件的输出位置。If both properties are set, logging.file.path is ignored and only logging.file.name is used.
+
+The following table shows how the `logging.*` properties can be used together:
+
+| `logging.file.name`                   | `logging.file.path`                          | Description                                                  |
+| :------------------------------------ | :------------------------------------------- | :----------------------------------------------------------- |
+| *(none)*                              | *(none)*                                     | Console only logging.                                        |
+| Specific file (for example, `my.log`) | *(none)*                                     | Writes to the location specified by `logging.file.name`. The location can be absolute or relative to the current directory. |
+| *(none)*                              | Specific directory (for example, `/var/log`) | Writes `spring.log` to the directory specified by `logging.file.path`. The directory can be absolute or relative to the current directory. |
+| Specific file                         | Specific directory                           | Writes to the location specified by `logging.file.name` and ignores `logging.file.path`. The location can be absolute or relative to the current directory. |
+
+> `logging.file.name` 配置输出到某个目录时，需要提前创建该目录，否则该日志文件不会生成
+
+#### File Rotation
+
+If you are using the Logback, it is possible to fine-tune log rotation settings using your `application.properties` or `application.yaml` file. 
+
+The following rotation policy properties are supported:
+
+| Name                                                   | Description                                                  |
+| :----------------------------------------------------- | :----------------------------------------------------------- |
+| `logging.logback.rollingpolicy.file-name-pattern`      | The filename pattern used to create log archives.            |
+| `logging.logback.rollingpolicy.clean-history-on-start` | If log archive cleanup should occur when the application starts. |
+| `logging.logback.rollingpolicy.max-file-size`          | The maximum size of log file before it is archived.          |
+| `logging.logback.rollingpolicy.total-size-cap`         | The maximum amount of size log archives can take before being deleted. |
+| `logging.logback.rollingpolicy.max-history`            | The maximum number of archive log files to keep (defaults to 7). |
 
 ### 测试
 
