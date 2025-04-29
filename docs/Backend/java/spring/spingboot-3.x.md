@@ -474,6 +474,101 @@ The following rotation policy properties are supported:
 | `logging.logback.rollingpolicy.total-size-cap`         | The maximum amount of size log archives can take before being deleted. |
 | `logging.logback.rollingpolicy.max-history`            | The maximum number of archive log files to keep (defaults to 7). |
 
+#### Structured Logging
+
+Structured logging is a technique where the log output is written in a well-defined, often **machine-readable** format.
+
+1. 在logback-spring.xml中配置
+
+   ```xml
+   <!-- replace your encoder with StructuredLogEncoder -->
+   <encoder class="org.springframework.boot.logging.logback.StructuredLogEncoder">
+   	<format>${CONSOLE_LOG_STRUCTURED_FORMAT}</format>
+   	<charset>${CONSOLE_LOG_CHARSET}</charset>
+   </encoder>
+   ```
+
+   > 其中CONSOLE_LOG_STRUCTURED_FORMAT的值 可以是【ecs, gelf, logstash】
+
+2. 配置文件里配置
+
+   ```properties
+   logging.structured.format.console=ecs
+   logging.structured.format.file=ecs
+   ```
+
+#### Profile-specific Configuration
+
+根据spring特定的profile来生效不同的配置项
+
+```xml
+<springProfile name="dev | staging">
+	<!-- configuration to be enabled when the "dev" or "staging" profiles are active -->
+</springProfile>
+
+<springProfile name="!production">
+	<!-- configuration to be enabled when the "production" profile is not active -->
+</springProfile>
+```
+
+#### Environment Properties
+
+The `<springProperty>` tag lets you expose properties from the Spring [`Environment`](https://docs.spring.io/spring-framework/docs/6.2.x/javadoc-api/org/springframework/core/env/Environment.html) for use within Logback. 
+
+```xml
+<springProperty scope="context" name="fluentHost" source="myapp.fluentd.host"
+		defaultValue="localhost"/>
+<appender name="FLUENT" class="ch.qos.logback.more.appenders.DataFluentAppender">
+	<remoteHost>${fluentHost}</remoteHost>
+	...
+</appender>
+```
+
+>  The source must be specified in **kebab case** (such as my.property-name). However, properties can be added to the Environment by using the relaxed rules.
+
+### i18n
+
+The auto-configuration applies when the default properties file for the configured resource bundle is available (`messages.properties` by default).默认情况下有这个文件时`/resources/messages.properties`会自动配置`MessageSource`
+
+当设置  `spring.messages.basename=i18n.messages` 其中`i18n`是匹配文件夹名，`messages`匹配文件名。这时候会去匹配`/resources/i18n/message.properties文件`
+
+#### 配置语言切换
+
+默认配置下，是可以通过请求头（Accept-Language）来切换语言的，是通过`AcceptHeaderLocaleResolver`来解析的。
+
+通过参数来切换语言
+
+```java
+@Configuration
+public class LocaleConfig implements WebMvcConfigurer {
+
+    @Bean
+    public LocaleResolver localeResolver() {
+        SessionLocaleResolver slr = new SessionLocaleResolver();
+        // 默认语言
+        slr.setDefaultLocale(Locale.US);
+        return slr;
+    }
+
+    @Bean
+    public LocaleChangeInterceptor localeChangeInterceptor() {
+        LocaleChangeInterceptor lci = new LocaleChangeInterceptor();
+        // URL 参数名，例如 ?lang=zh_CN
+        lci.setParamName("lang");
+        return lci;
+    }
+
+    @Override
+    public void addInterceptors(InterceptorRegistry registry) {
+        registry.addInterceptor(localeChangeInterceptor());
+    }
+}
+```
+
+> 如果既想第一次接受请求头（Accept-Language），又想支持通过参数来切换，则需要自定义实现`AcceptHeaderLocaleResolver`
+
+
+
 ### 测试
 
 By default, `@SpringBootTest` does not start the server but instead sets up a mock environment for testing web endpoints.
