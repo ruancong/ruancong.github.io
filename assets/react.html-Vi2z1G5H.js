@@ -1,4 +1,4 @@
-import{_ as s,c as e,a,o as i}from"./app-78fdMCvG.js";const l={};function t(c,n){return i(),e("div",null,n[0]||(n[0]=[a(`<h3 id="react组件" tabindex="-1"><a class="header-anchor" href="#react组件"><span>React组件</span></a></h3><p>React components are JavaScript functions that return markup:</p><div class="language-react line-numbers-mode" data-highlighter="prismjs" data-ext="react" data-title="react"><pre><code><span class="line">function MyButton() {</span>
+import{_ as s,c as e,a,o as i}from"./app-CBg_25bf.js";const l={};function t(c,n){return i(),e("div",null,n[0]||(n[0]=[a(`<h3 id="react组件" tabindex="-1"><a class="header-anchor" href="#react组件"><span>React组件</span></a></h3><p>React components are JavaScript functions that return markup:</p><div class="language-react line-numbers-mode" data-highlighter="prismjs" data-ext="react" data-title="react"><pre><code><span class="line">function MyButton() {</span>
 <span class="line">  return (</span>
 <span class="line">    &lt;button&gt;I&#39;m a button&lt;/button&gt;</span>
 <span class="line">  );</span>
