@@ -44,24 +44,25 @@ Core changes
     }
   ```
 
+### Spring base
 
-### `@Import` 、`@ImportResource`
+#### `@Import` 、`@ImportResource`
 
 You need not put all your `@Configuration` into a single class. The `@Import` annotation can be used to import additional configuration classes. 
 
 If you absolutely must use XML based configuration, we recommend that you still start with a `@Configuration` class. You can then use an `@ImportResource` annotation to load XML configuration files.
 
-### 排除自动配置的类
+#### 排除自动配置的类
 
 * `@SpringBootApplication(exclude = { DataSourceAutoConfiguration.class }) `
 * 如果类不在`classPath`上，可以 `excludeName` 属性用全限定类名进行排除
 * 还可以使用配置文件  `spring.autoconfigure.exclude` property
 
-### 默认的自动配置的包
+#### 默认的自动配置的包
 
 申明`@SpringBootApplication`的类所在的包就是默认的参与自动配置的包。如果想要额外的其它包，可以使用`@AutoConfigurationPackage` 进行声明
 
-### spring beans的注入
+#### spring beans的注入
 
 推荐使用构造函数进行注入。如果有多个构造函数，你需要在你想的那个上使用`@Autowired`。并声明为`final`。例如：
 
@@ -89,7 +90,7 @@ public class MyAccountService implements AccountService {
 }
 ```
 
-### `@SpringBootApplication`
+#### `@SpringBootApplication`
 
 单个 `@SpringBootApplication` 可以包括这三个注解的作用
 
@@ -98,11 +99,11 @@ public class MyAccountService implements AccountService {
 - `@ComponentScan`
 - `@SpringBootConfiguration`
 
-### 关闭启动日志
+#### 关闭启动日志
 
 `spring.main.log-startup-info` 配置
 
-### Liveness State 与 Readiness State
+#### Liveness State 与 Readiness State
 
 Liveness State  代表 springboot 应用内部的状态：通常与 `ApplicationContext` 是否初始化完成相关
 
@@ -140,11 +141,11 @@ public class MyLocalCacheVerifier {
 
 
 
-### 当应用启动后要完成某个任务
+#### 当应用启动后要完成某个任务
 
 Tasks expected to run during startup should be executed by `CommandLineRunner` and `ApplicationRunner` components instead of using Spring component lifecycle callbacks such as `@PostConstruct`.
 
-### 事件与监听器
+#### 事件与监听器
 
 注册监听器
 
@@ -155,17 +156,17 @@ Tasks expected to run during startup should be executed by `CommandLineRunner` a
 
 > Event listeners should not run potentially lengthy tasks as they execute in the same thread by default. Consider using [application and command-line runners](https://docs.spring.io/spring-boot/docs/current/reference/html/features.html#features.spring-application.command-line-runner) instead.
 
-### 配置文件
+#### 配置文件
 
 > It is recommended to stick with one format for your entire application. If you have configuration files with both `.properties` and YAML format in the same location, `.properties` takes precedence.
 
-#### JSON Application Properties
+##### JSON Application Properties
 
 当有一些配置文件key名字无法在环境变量生效时。可以用inline json 这种方式来设置：
 
 `java -Dspring.application.json='{"my":{"name":"test"}}' -jar myapp.jar`、`java -Dspring.application.json='{"my":{"name":"test"}}' -jar myapp.jar`、`java -jar myapp.jar --spring.application.json='{"my":{"name":"test"}}'`。 这样`my.name=test`就会加入spring environment中。这种方式也支持设置`null`值
 
-#### 设置配置文件路径
+##### 设置配置文件路径
 
 默认搜寻配置文件的地方：
 
@@ -227,16 +228,14 @@ java -jar myproject.jar --spring.config.location=\
 >
 > 因为是同一个级别，所以会按profile设置来加载，先加载-prod的文件，再加载-live的文件
 
-#### 引入额外的配置文件
+##### 引入额外的配置文件
 
 `spring.config.import`
 
-```pro
-spring.config.import=optional:file:/etc/config/myconfig[.yaml]
-```
+```spring.config.import=optional:file:/etc/config/myconfig[.yaml]
 
 
-#### 配置随机值
+##### 配置随机值
 
 ```properties
 my.secret=${random.value}
@@ -247,13 +246,13 @@ my.number-less-than-ten=${random.int(10)}
 my.number-in-range=${random.int[1024,65536]}
 ```
 
-#### 设置系统环境变量统一前缀
+##### 设置系统环境变量统一前缀
 
 可以直接通过`SpringApplication.setEnvironmentPrefix`方法来设置。
 
 > For example, if you set the prefix to `input`, a property such as `remote.timeout` will also be resolved as `input.remote.timeout` in the system environment.
 
-#### 单一文件中实现多个文件的作用
+##### 单一文件中实现多个文件的作用
 
 在YAML 中使用三个连接符来进行分割 `---`
 
@@ -283,7 +282,7 @@ spring.config.activate.on-cloud-platform=kubernetes
 >
 > 分割符的前面不能有空格。上下行也不能有相同的其它分隔符
 
-#### 不同环境激活不同的配置
+##### 不同环境激活不同的配置
 
 用 `spring.config.activate.*` 来进行配置
 
@@ -300,7 +299,7 @@ spring.config.activate.on-profile=prod | staging
 myotherprop=sometimes-set
 ```
 
-#### 解析YAML 文件
+##### 解析YAML 文件
 
 `@PropertySource` 和`@PropertySource`不能加载 YAML 文件, 它们只能加载`.properties`文件。`YamlPropertiesFactoryBean `与`YamlPropertiesFactoryBean` 可以申明为Bean去直接加载YAML文件
 
@@ -315,7 +314,7 @@ myotherprop=sometimes-set
 
 可以创建 `YamlPropertySourceLoader` 去解析YAML文件
 
-#### 激活 `@ConfigurationProperties`
+##### 激活 `@ConfigurationProperties`
 
 要激活自定义的配置文件。需要将它们申明为spring Bean。可以直接使用 `@Component` 等注解或scan的方式进行注册。
 
@@ -335,7 +334,7 @@ public class SomeProperties {
 
 还可以使用 `@ConfigurationPropertiesScan` 进行扫描注册
 
-#### 配置第三方包里的配置类
+##### 配置第三方包里的配置类
 
 ```java
 @Configuration(proxyBeanMethods = false)
@@ -348,7 +347,7 @@ public class ThirdPartyConfiguration {
 }
 ```
 
-#### 绑定到Map类型
+##### 绑定到Map类型
 
 ```properties
 my.map.[/key1]=value1
@@ -369,13 +368,13 @@ The properties above will bind to a `Map` with `/key1`, `/key2` and `key3` as th
 
 > For YAML files, the brackets need to be surrounded by quotes for the keys to be parsed properly.
 
-#### 绑定系统环境变量
+##### 绑定系统环境变量
 
 For example, the configuration property `spring.main.log-startup-info` would be an environment variable named `SPRING_MAIN_LOGSTARTUPINFO`.
 
 For example, the configuration property `my.service[0].other` would use an environment variable named `MY_SERVICE_0_OTHER`.
 
-#### 检验
+##### 检验
 
 ```java
 @ConfigurationProperties("my.service")
@@ -403,6 +402,49 @@ public class MyProperties {
 ```
 
 > To ensure that validation is always triggered for nested properties, even when no properties are found, the associated field must be annotated with `@Valid`. 
+
+### Spring MVC
+
+#### HttpMessageConverters 与 ConversionService
+
+| **特性**             | **HttpMessageConverters**                          | **ConversionService**                              |
+| -------------------- | -------------------------------------------------- | -------------------------------------------------- |
+| **主要用途**         | HTTP 请求/响应体的序列化与反序列化（如 JSON、XML） | 通用类型转换（如字符串到数字、日期，或自定义类型） |
+| **使用场景**         | @RequestBody、@ResponseBody、REST API              | @RequestParam、@PathVariable、@ModelAttribute      |
+| **输入/输出**        | HTTP 消息（请求体/响应体）                         | Java 对象、字符串、属性值                          |
+| **核心接口**         | HttpMessageConverter                               | ConversionService                                  |
+| **内置实现**         | MappingJackson2HttpMessageConverter 等             | DefaultConversionService                           |
+| **媒体类型支持**     | 支持特定媒体类型（如 application/json）            | 不依赖媒体类型，专注于 Java 类型转换               |
+| **自定义方式**       | 实现 HttpMessageConverter 或配置 WebMvcConfigurer  | 实现 Converter 或注册到 ConversionService          |
+| **Spring Boot 配置** | 自动配置，依赖类路径（如 Jackson、Gson）           | 自动配置，集成到数据绑定流程                       |
+
+```java
+@Component 
+public class StringToLocalDateConverter implements Converter<String, LocalDate>{
+    ...
+}
+```
+
+自定义转化器如果是声明了`@Component`会自动会注册到ConversionService内。还可以手注册：
+
+```java
+@Configuration
+public class ConversionConfig {
+
+    @Bean
+    public ConversionService conversionService() {
+        DefaultConversionService conversionService = new DefaultConversionService();
+        // 可以手动添加转换器（如果需要）
+        conversionService.addConverter(new StringToLocalDateConverter());
+        conversionService.addConverter(new StringToUserRoleConverter());
+        return conversionService;
+    }
+}
+```
+
+> Spring Boot 默认提供一个全局的 ConversionService（名为 conversionService 的 Bean）。
+>
+> 如果你手动定义了一个自定义 ConversionService（如通过 @Bean 方法），Spring Boot 会使用你的自定义实例，而不会自动注册所有的 Converter。在这种情况下，你需要手动添加 Converter
 
 ### 日志
 
@@ -1121,8 +1163,6 @@ spring.task.execution.pool.keep-alive=60s
 ```properties
 spring.threads.virtual.enabled=true
 ```
-
-
 
 
 
