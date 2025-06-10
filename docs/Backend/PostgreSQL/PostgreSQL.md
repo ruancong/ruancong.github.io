@@ -433,3 +433,15 @@ price numeric CONSTRAINT positive_price CHECK (price > 0)
 );
 ```
 
+CHECK 可以引用引用其它列
+
+```postgresql
+CREATE TABLE products (
+product_no integer,
+name text,
+price numeric CHECK (price > 0),
+discounted_price numeric CHECK (discounted_price > 0),
+CHECK (price > discounted_price)
+);
+```
+
