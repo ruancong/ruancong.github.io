@@ -1,4 +1,4 @@
-import{_ as s,c as n,a,o as i}from"./app-BgnsxkLN.js";const l={};function t(d,e){return i(),n("div",null,e[0]||(e[0]=[a(`<h2 id="sql注释" tabindex="-1"><a class="header-anchor" href="#sql注释"><span>sql注释</span></a></h2><p>Two dashes (“--”) introduce comments. Whatever follows them is ignored up to the end of the line.</p><div class="language-postgresql line-numbers-mode" data-highlighter="prismjs" data-ext="postgresql" data-title="postgresql"><pre><code><span class="line">CREATE TABLE weather (</span>
+import{_ as s,c as n,a,o as i}from"./app-CuaR71ro.js";const l={};function t(d,e){return i(),n("div",null,e[0]||(e[0]=[a(`<h2 id="sql注释" tabindex="-1"><a class="header-anchor" href="#sql注释"><span>sql注释</span></a></h2><p>Two dashes (“--”) introduce comments. Whatever follows them is ignored up to the end of the line.</p><div class="language-postgresql line-numbers-mode" data-highlighter="prismjs" data-ext="postgresql" data-title="postgresql"><pre><code><span class="line">CREATE TABLE weather (</span>
 <span class="line">city varchar(80),</span>
 <span class="line">temp_lo int, -- low temperature</span>
 <span class="line">temp_hi int, -- high temperature</span>
