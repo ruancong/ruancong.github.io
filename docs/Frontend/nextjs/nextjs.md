@@ -65,6 +65,18 @@
 | [`(folder)`](https://nextjs.org/docs/app/api-reference/file-conventions/route-groups#convention) | Group routes without affecting routing           |
 | [`_folder`](https://nextjs.org/docs/app/getting-started/project-structure#private-folders) | Opt folder and all child segments out of routing |
 
+Route Groups can be nested.
+
+#### Example
+
+* **Organize routes without affecting the URL path**
+
+  ![image-20250620171433724](./images/image-20250620171433724.png)
+
+  Even though routes inside `(marketing)` and `(shop)` share the same URL hierarchy, you can create a different layout for each group by adding a `layout.js` file inside their folders.
+
+  ![image-20250620171456302](./images/image-20250620171456302.png)
+
 ### Parallel and Intercepted Routes
 
 |                                                              |                            |
@@ -151,3 +163,80 @@ This indicates the folder is for organizational purposes and should **not be inc
 
   In the example above, both `(marketing)` and `(shop)` have their own root layout.
 
+# Layouts and Pages
+
+## Creating a page
+
+A **page** is UI that is rendered on a specific route.
+
+![image-20250623105910942](./images/image-20250623105910942.png)
+
+## Creating a layout
+
+A layout is UI that is **shared** between multiple pages. 
+
+```tsx
+// app/layout.tsx
+export default function DashboardLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
+  return (
+    <html lang="en">
+      <body>
+        {/* Layout UI */}
+        {/* Place children where you want to render a page or nested layout */}
+        <main>{children}</main>
+      </body>
+    </html>
+  )
+}
+```
+
+The layout above is called a [root layout](https://nextjs.org/docs/app/api-reference/file-conventions/layout#root-layout) because it's defined at the root of the `app` directory. The root layout is **required** and must contain `html` and `body` tags.
+
+## Creating a nested route
+
+A nested route is a route composed of multiple URL segments. For example, the `/blog/[slug]` route is composed of three segments:
+
+- `/` (Root Segment)
+- `blog` (Segment)
+- `[slug]` (Leaf Segment)
+
+In Next.js:
+
+- **Folders** are used to define the route segments that map to URL segments.
+- **Files** (like `page` and `layout`) are used to create UI that is shown for a segment.
+
+## Nesting layouts
+
+For example, to create a layout for the `/blog` route, add a new `layout` file inside the `blog` folder.
+
+![image-20250623150452533](./images/image-20250623150452533.png)
+
+## Creating a dynamic segment
+
+To create a dynamic segment, wrap the segment (folder) name in square brackets: `[segmentName]`. For example, in the `app/blog/[slug]/page.tsx` route, the `[slug]` is the dynamic segment.
+
+```tsx
+export default async function BlogPostPage({
+  params,
+}: {
+  params: Promise<{ slug: string }>
+}) {
+  const { slug } = await params
+  const post = await getPost(slug)
+ 
+  return (
+    <div>
+      <h1>{post.title}</h1>
+      <p>{post.content}</p>
+    </div>
+  )
+}
+```
+
+Dynamic Segments are passed as the `params` prop to [`layout`](https://nextjs.org/docs/app/api-reference/file-conventions/layout), [`page`](https://nextjs.org/docs/app/api-reference/file-conventions/page), [`route`](https://nextjs.org/docs/app/api-reference/file-conventions/route), and [`generateMetadata`](https://nextjs.org/docs/app/api-reference/functions/generate-metadata#generatemetadata-function) functions.
+
+>  the `params` prop is a promise.  In version 14 and earlier, `params` was a synchronous prop.
