@@ -240,3 +240,47 @@ export default async function BlogPostPage({
 Dynamic Segments are passed as the `params` prop to [`layout`](https://nextjs.org/docs/app/api-reference/file-conventions/layout), [`page`](https://nextjs.org/docs/app/api-reference/file-conventions/page), [`route`](https://nextjs.org/docs/app/api-reference/file-conventions/route), and [`generateMetadata`](https://nextjs.org/docs/app/api-reference/functions/generate-metadata#generatemetadata-function) functions.
 
 >  the `params` prop is a promise.  In version 14 and earlier, `params` was a synchronous prop.
+
+# Linking and Navigating
+
+## Server Rendering
+
+There are two types of server rendering, based on *when* it happens:
+
+- **Static Rendering (or Prerendering)** happens at build time or during [revalidation](https://nextjs.org/docs/app/getting-started/caching-and-revalidating) and the result is cached.
+- **Dynamic Rendering** happens at request time in response to a client request.
+
+## Prefetching
+
+Prefetching is the process of loading a route in the background before the user navigates to it. This makes navigation between routes in your application feel instant, because by the time a user clicks on a link, the data to render the next route is already available client side.
+
+Next.js automatically prefetches routes linked with the [<Link>](https://nextjs.org/docs/app/api-reference/components/link) when they enter the user's viewport.
+
+## Streaming
+
+To use streaming, create a `loading.tsx` in your route folder:
+
+![image-20250624112802944](./images/image-20250624112802944.png)
+
+
+
+## What can make transitions slow?
+
+### Slow networks
+
+To improve perceived performance, you can use the [`useLinkStatus` hook](https://nextjs.org/docs/app/api-reference/functions/use-link-status) to show inline visual feedback to the user (like spinners or text glimmers on the link) while a transition is in progress.
+
+```tsx
+'use client'
+ 
+import { useLinkStatus } from 'next/link'
+ 
+export default function LoadingIndicator() {
+  const { pending } = useLinkStatus()
+  return pending ? (
+    <div role="status" aria-label="Loading" className="spinner" />
+  ) : null
+}
+```
+
+> `useLinkStatus` must be used within a descendant component of a `Link` component
