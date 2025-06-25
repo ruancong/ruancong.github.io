@@ -284,3 +284,175 @@ export default function LoadingIndicator() {
 ```
 
 > `useLinkStatus` must be used within a descendant component of a `Link` component
+
+# Server and Client Components
+
+By default, layouts and pages are [Server Components](https://react.dev/reference/rsc/server-components), which lets you fetch data and render parts of your UI on the server, optionally cache the result, and stream it to the client. When you need interactivity or browser APIs, you can use [Client Components](https://react.dev/reference/rsc/use-client) to layer in functionality.
+
+## When to use Server and Client Components
+
+Use **Client Components** when you need:
+
+- [State](https://react.dev/learn/managing-state) and [event handlers](https://react.dev/learn/responding-to-events). E.g. `onClick`, `onChange`.
+- [Lifecycle logic](https://react.dev/learn/lifecycle-of-reactive-effects). E.g. `useEffect`.
+- Browser-only APIs. E.g. `localStorage`, `window`, `Navigator.geolocation`, etc.
+- [Custom hooks](https://react.dev/learn/reusing-logic-with-custom-hooks).
+
+Use **Server Components** when you need:
+
+- Fetch data from databases or APIs close to the source.
+- Use API keys, tokens, and other secrets without exposing them to the client.
+- Reduce the amount of JavaScript sent to the browser.
+- Improve the [First Contentful Paint (FCP)](https://web.dev/fcp/), and stream content progressively to the client.
+
+## Examples
+
+### Using Client Components
+
+You can create a Client Component by adding the [`"use client"`](https://react.dev/reference/react/use-client) directive at the top of the file, above your imports.
+
+Once a file is marked with `"use client"`, **all its imports and child components are considered part of the client bundle**. This means you don't need to add the directive to every component that is intended for the client.
+
+**Client components cannot be async functions.**
+
+### Passing data from Server to Client Components
+
+You can pass data from Server Components to Client Components using props.
+
+### Interleaving Server and Client Components
+
+You can pass Server Components as a prop to a Client Component. This allows you to visually nest server-rendered UI within Client components.
+
+### Context providers
+
+[React context](https://react.dev/learn/passing-data-deeply-with-context) is commonly used to share global state like the current theme. However, React context is not supported in Server Components.
+
+To use context, create a Client Component that accepts `children`:
+
+### Third-party components
+
+When using a third-party component that relies on client-only features, you can wrap it in a Client Component to ensure it works as expected.
+
+ If you try to use `<Carousel />` directly within a Server Component, you'll see an error. This is because Next.js doesn't know `<Carousel />` is using client-only features.
+
+To fix this, you can wrap third-party components that rely on client-only features in your own Client Components:
+
+```tsx
+'use client'
+ 
+import { Carousel } from 'acme-carousel'
+ 
+export default Carousel
+```
+
+Now, you can use `<Carousel />` directly within a Server Component
+
+### Preventing environment poisoning
+
+JavaScript modules can be shared between both Server and Client Components modules. This means it's possible to accidentally import server-only code into the client. For example, consider the following function:
+
+```ts
+export async function getData() {
+  const res = await fetch('https://external-service.com/data', {
+    headers: {
+      authorization: process.env.API_KEY,
+    },
+  })
+ 
+  return res.json()
+}
+```
+
+This function contains an `API_KEY` that should never be exposed to the client.
+
+In Next.js, only environment variables prefixed with `NEXT_PUBLIC_` are included in the client bundle. If variables are not prefixed, Next.js replaces them with an empty string.
+
+As a result, even though `getData()` can be imported and executed on the client, it won't work as expected.
+
+To prevent accidental usage in Client Components, you can use the [`server-only` package](https://www.npmjs.com/package/server-only).
+
+```ts
+import 'server-only'
+ 
+export async function getData() {
+  const res = await fetch('https://external-service.com/data', {
+    headers: {
+      authorization: process.env.API_KEY,
+    },
+  })
+ 
+  return res.json()
+}
+```
+
+Now, if you try to import the module into a Client Component, there will be a build-time error.
+
+### Build Server Components
+
+When running` npm run build `in Next.js, it attempts to pre-render pages. At this time, the local server is not actually running, so fetching from http://localhost:3000 will fail.  There are two solutions:
+
+1.  Set the page to dynamic rendering, preventing pre-rendering at build time
+2. Set no-cache parameters when fetching: like [`await fetch(${baseUrl}/api/users, { cache: "no-store" });`]
+
+# Fetching data
+
+## Server Components
+
+You can fetch data in Server Components using:
+
+1. The [`fetch` API](https://nextjs.org/docs/app/getting-started/fetching-data#with-the-fetch-api)
+2. An [ORM or database](https://nextjs.org/docs/app/getting-started/fetching-data#with-an-orm-or-database)
+
+## Client Components
+
+There are two ways to fetch data in Client Components, using:
+
+1. React's [`use` hook](https://react.dev/reference/react/use)
+2. A community library like [SWR](https://swr.vercel.app/) or [React Query](https://tanstack.com/query/latest)
+
+## Examples
+
+### Sequential data fetching
+
+```tsx
+export default async function Page({ params }) {
+  // These requests will be sequential
+  const { username } = await params
+  const artist = await getArtist(username)
+  const albums = await getAlbums(username)
+  return <div>{artist.name}</div>
+}
+```
+
+### Parallel data fetching
+
+```tsx
+export default async function Page({
+  params,
+}: {
+  params: Promise<{ username: string }>
+}) {
+  const { username } = await params
+  const artistData = getArtist(username)
+  const albumsData = getAlbums(username)
+ 
+  // Initiate both requests in parallel
+  const [artist, albums] = await Promise.all([artistData, albumsData])
+ 
+  return (
+    <>
+      <h1>{artist.name}</h1>
+      <Albums list={albums} />
+    </>
+  )
+}
+```
+
+> **Good to know:** If one request fails when using `Promise.all`, the entire operation will fail. To handle this, you can use the [`Promise.allSettled`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/allSettled) method instead.
+
+# Updating data
+
+
+
+
+
