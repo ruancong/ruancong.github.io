@@ -452,7 +452,121 @@ export default async function Page({
 
 # Updating data
 
+You can update data in Next.js using React's [Server Functions](https://react.dev/reference/rsc/server-functions). 
 
+## What are Server Functions?
 
+A **Server Function** is an asynchronous function that runs on the server. They can be called from client through a network request, which is why they must be asynchronous.
 
+By convention, a Server Action is an async function used with [`startTransition`](https://react.dev/reference/react/startTransition). This happens automatically when the function is:
 
+- Passed to a `<form>` using the `action` prop.
+- Passed to a `<button>` using the `formAction` prop.
+
+## Creating Server Functions
+
+A Server Function can be defined by using the [`use server`](https://react.dev/reference/rsc/use-server) directive. You can place the directive at the top of an **asynchronous** function to mark the function as a Server Function, or at the top of a separate file to mark all exports of that file.
+
+```ts
+export async function createPost(formData: FormData) {
+  'use server'
+  const title = formData.get('title')
+  const content = formData.get('content')
+ 
+  // Update data
+  // Revalidate cache
+}
+ 
+export async function deletePost(formData: FormData) {
+  'use server'
+  const id = formData.get('id')
+ 
+  // Update data
+  // Revalidate cache
+}
+```
+
+### Server Components
+
+Server Functions can be inlined in Server Components by adding the `"use server"` directive to the top of the function body:
+
+```tsx
+export default function Page() {
+  // Server Action
+  async function createPost(formData: FormData) {
+    'use server'
+    // ...
+  }
+ 
+  return <></>
+}
+```
+
+### Client Components
+
+It's not possible to define Server Functions in Client Components. However, you can invoke them in Client Components by importing them from a file that has the `"use server"` directive at the top of it:
+
+```ts
+'use server'
+ 
+export async function createPost() {}
+```
+
+### Passing actions as props
+
+```tsx
+'use client'
+ 
+export default function ClientComponent({
+  updateItemAction,
+}: {
+  updateItemAction: (formData: FormData) => void
+}) {
+  return <form action={updateItemAction}>{/* ... */}</form>
+}
+```
+
+## Invoking Server Functions
+
+There are two main ways you can invoke a Server Function:
+
+1. [Forms](https://nextjs.org/docs/app/getting-started/updating-data#forms) in Server and Client Components
+2. [Event Handlers](https://nextjs.org/docs/app/getting-started/updating-data#event-handlers) and [useEffect](https://nextjs.org/docs/app/getting-started/updating-data#useeffect) in Client Components
+
+### Forms
+
+React extends the HTML `<form>` element to allow Server Function to be invoked with the HTML `action` prop.
+
+When invoked in a form, the function automatically receives the [`FormData`](https://developer.mozilla.org/docs/Web/API/FormData/FormData) object. You can extract the data using the native [`FormData` methods](https://developer.mozilla.org/en-US/docs/Web/API/FormData#instance_methods):
+
+```tsx
+// app/ui/form.tsx
+import { createPost } from '@/app/actions'
+ 
+export function Form() {
+  return (
+    <form action={createPost}>
+      <input type="text" name="title" />
+      <input type="text" name="content" />
+      <button type="submit">Create</button>
+    </form>
+  )
+}
+```
+
+```ts
+// app/actions.ts
+'use server'
+ 
+export async function createPost(formData: FormData) {
+  const title = formData.get('title')
+  const content = formData.get('content')
+ 
+  // Update data
+  // Revalidate cache
+}
+```
+
+### Event Handlers
+
+You can invoke a Server Function in a Client Component by using event handlers such as `onClick`.
