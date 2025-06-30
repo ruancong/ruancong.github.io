@@ -570,3 +570,17 @@ export async function createPost(formData: FormData) {
 ### Event Handlers
 
 You can invoke a Server Function in a Client Component by using event handlers such as `onClick`.
+
+# Error Handling
+
+## Handling expected errors
+
+Expected errors are those that can occur during the normal operation of the application, such as those from [server-side form validation](https://nextjs.org/docs/app/guides/forms) or failed requests. These errors should be handled explicitly and returned to the client.
+
+## Handling uncaught exceptions
+
+Uncaught exceptions are unexpected errors that indicate bugs or issues that should not occur during the normal flow of your application. These should be handled by throwing errors, which will then be caught by error boundaries.
+
+### Global errors
+
+While less common, you can handle errors in the root layout using the [`global-error.js`](https://nextjs.org/docs/app/api-reference/file-conventions/error#global-error) file, located in the root app directory, even when leveraging [internationalization](https://nextjs.org/docs/app/guides/internationalization). Global error UI must define its own `<html>` and `<body>` tags, since it is replacing the root layout or template when active.
