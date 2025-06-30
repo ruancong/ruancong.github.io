@@ -570,3 +570,84 @@ export async function createPost(formData: FormData) {
 ### Event Handlers
 
 You can invoke a Server Function in a Client Component by using event handlers such as `onClick`.
+
+# Caching and Revalidating
+
+Caching is a technique for storing the result of data fetching and other computations so that future requests for the same data can be served faster, without doing the work again. While revalidation allows you to update cache entries without having to rebuild your entire application.
+
+Next.js provides a few APIs to handle caching and revalidation. This guide will walk you through when and how to use them.
+
+- [`fetch`](https://nextjs.org/docs/app/getting-started/caching-and-revalidating#fetch)
+- [`unstable_cache`](https://nextjs.org/docs/app/getting-started/caching-and-revalidating#unstable_cache)
+- [`revalidatePath`](https://nextjs.org/docs/app/getting-started/caching-and-revalidating#revalidatepath)
+- [`revalidateTag`](https://nextjs.org/docs/app/getting-started/caching-and-revalidating#revalidatetag)
+
+## fetch
+
+```ts
+export default async function Page() {
+  const data = await fetch('https://...', { cache: 'force-cache' })
+}
+```
+
+> **Good to know**: Although `fetch` requests are not cached by default, Next.js will [prerender](https://nextjs.org/docs/app/getting-started/partial-prerendering#static-rendering) routes that have `fetch` requests and cache the HTML. If you want to guarantee a route is [dynamic](https://nextjs.org/docs/app/getting-started/partial-prerendering#dynamic-rendering), use the [`connection` API](https://nextjs.org/docs/app/api-reference/functions/connection).
+
+To revalidate the data returned by a `fetch` request, you can use the `next.revalidate` option.
+
+```ts
+export default async function Page() {
+  const data = await fetch('https://...', { next: { revalidate: 3600 } })
+}
+```
+
+> This will revalidate the data after a specified amount of seconds.  
+>
+> Next.js extends the [Web `fetch()` API](https://developer.mozilla.org/docs/Web/API/Fetch_API) to allow each request on the server to set its own persistent caching and revalidation semantics.
+
+## unstable_cache
+
+```ts
+const getCachedUser = unstable_cache(
+  async () => {
+    return getUserById(userId)
+  },
+  [userId], // add the user ID to the cache key
+  {
+    tags: ['user'],
+    revalidate: 3600,
+  }
+)
+```
+
+The function accepts a third optional object to define how the cache should be revalidated. It accepts:
+
+- `tags`: an array of tags used by Next.js to revalidate the cache.
+- `revalidate`: the number of seconds after cache should be revalidated.
+
+## revalidateTag
+
+```ts
+import { revalidateTag } from 'next/cache'
+ 
+export async function updateUser(id: string) {
+  // Mutate data
+  revalidateTag('user')
+}
+```
+
+You can reuse the same tag in multiple functions to revalidate them all at once. **In other words,** you can revalidate tags **used in the options of the `fetch` and `unstable_cache` methods.**
+
+## revalidatePath
+
+`revalidatePath` is used to revalidate a route and following an event. To use it, call it in a [Route Handler](https://nextjs.org/docs/app/api-reference/file-conventions/route) or Server Action:
+
+```ts
+// app/lib/actions.ts
+import { revalidatePath } from 'next/cache'
+ 
+export async function updateUser(id: string) {
+  // Mutate data
+  revalidatePath('/profile')
+}
+```
+
