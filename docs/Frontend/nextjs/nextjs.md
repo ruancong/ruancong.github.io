@@ -584,3 +584,17 @@ Uncaught exceptions are unexpected errors that indicate bugs or issues that shou
 ### Global errors
 
 While less common, you can handle errors in the root layout using the [`global-error.js`](https://nextjs.org/docs/app/api-reference/file-conventions/error#global-error) file, located in the root app directory, even when leveraging [internationalization](https://nextjs.org/docs/app/guides/internationalization). Global error UI must define its own `<html>` and `<body>` tags, since it is replacing the root layout or template when active.
+
+# CSS
+
+## CSS Modules
+
+CSS Modules locally scope CSS by generating unique class names. This allows you to use the same class in different files without worrying about naming collisions.
+
+To start using CSS Modules, create a new file with the extension `.module.css` and import it into any component inside the `app` directory（it's not necessary）.
+
+## Global CSS
+
+You can use global CSS to apply styles across your application.
+
+Create a `app/global.css` file and import it in the root layout to apply the styles to **every route** in your application
