@@ -820,3 +820,139 @@ export default function RootLayout({
 ```
 
 > The `localFont` function must be declared at the top of the module (in other words, at the top of the file), and its `src` value **cannot be** a path alias (e.g., `@/fonts/my-font.woff2`).
+
+# Metadata and OG images
+
+The Metadata APIs can be used to define your application metadata for improved SEO and web shareability 
+
+## Default fields
+
+There are two default `meta` tags that are always added even if a route doesn't define metadata:
+
+```html
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+```
+
+## Static metadata
+
+To define static metadata, export a [`Metadata` object](https://nextjs.org/docs/app/api-reference/functions/generate-metadata#metadata-object) from a static [`layout.js`](https://nextjs.org/docs/app/api-reference/file-conventions/layout) or [`page.js`](https://nextjs.org/docs/app/api-reference/file-conventions/page) file. For example, to add a title and description to the blog route:
+
+```tsx
+import type { Metadata } from 'next'
+ 
+export const metadata: Metadata = {
+  title: 'My Blog',
+  description: '...',
+}
+ 
+export default function Page() {}
+```
+
+## Generated metadata
+
+You can use [`generateMetadata`](https://nextjs.org/docs/app/api-reference/functions/generate-metadata) function to `fetch` metadata that depends on data. For example, to fetch the title and description for a specific blog post:
+
+```tsx
+import type { Metadata, ResolvingMetadata } from 'next'
+ 
+type Props = {
+  params: Promise<{ slug: string }>
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>
+}
+ 
+export async function generateMetadata(
+  { params, searchParams }: Props,
+  parent: ResolvingMetadata
+): Promise<Metadata> {
+  const slug = (await params).slug
+ 
+  // fetch post information
+  const post = await fetch(`https://api.vercel.app/blog/${slug}`).then((res) =>
+    res.json()
+  )
+ 
+  return {
+    title: post.title,
+    description: post.description,
+  }
+}
+ 
+export default function Page({ params, searchParams }: Props) {}
+```
+
+### Streaming metadata
+
+For dynamically rendered pages, if resolving `generateMetadata` might block rendering, Next.js streams the resolved metadata separately and injects it into the HTML as soon as it's ready.
+
+Statically rendered pages don’t use this behavior since metadata is resolved at build time.
+
+Learn more about [streaming metadata](https://nextjs.org/docs/app/api-reference/functions/generate-metadata#streaming-metadata).
+
+### Memoizing data requests
+
+There may be cases where you need to fetch the **same** data for metadata and the page itself. To avoid duplicate requests, you can use React's [`cache` function](https://react.dev/reference/react/cache) to memoize the return value and only fetch the data once. For example, to fetch the blog post information for both the metadata and the page:
+
+```ts
+import { cache } from 'react'
+import { db } from '@/app/lib/db'
+ 
+// getPost will be used twice, but execute only once
+export const getPost = cache(async (slug: string) => {
+  const res = await db.query.posts.findFirst({ where: eq(posts.slug, slug) })
+  return res
+})
+```
+
+## Static Open Graph images
+
+Open Graph (OG) images are images that represent your site in social media. To add a static OG image to your application, create a `opengraph-image.png` file in the root of the app folder.
+
+You can also add OG images for specific routes by creating a `opengraph-image.png` deeper down the folder structure. 
+
+## Generated Open Graph images
+
+The [`ImageResponse` constructor](https://nextjs.org/docs/app/api-reference/functions/image-response) allows you to generate dynamic images using JSX and CSS. This is useful for OG images that depend on data.
+
+For example, to generate a unique OG image for each blog post, add a `opengraph-image.ts` file inside the `blog` folder, and import the `ImageResponse` constructor from `next/og`:
+
+```ts
+// app/blog/[slug]/opengraph-image.ts
+import { ImageResponse } from 'next/og'
+import { getPost } from '@/app/lib/data'
+ 
+// Image metadata
+export const size = {
+  width: 1200,
+  height: 630,
+}
+ 
+export const contentType = 'image/png'
+ 
+// Image generation
+export default async function Image({ params }: { params: { slug: string } }) {
+  const post = await getPost(params.slug)
+ 
+  return new ImageResponse(
+    (
+      // ImageResponse JSX element
+      <div
+        style={{
+          fontSize: 128,
+          background: 'white',
+          width: '100%',
+          height: '100%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        {post.title}
+      </div>
+    )
+  )
+}
+```
+
+> `ImageResponse` supports common CSS properties including flexbox and absolute positioning, custom fonts, text wrapping, centering, and nested images. [See the full list of supported CSS properties](https://nextjs.org/docs/app/api-reference/functions/image-response).
+
