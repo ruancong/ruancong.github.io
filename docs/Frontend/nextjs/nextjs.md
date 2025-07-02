@@ -254,7 +254,7 @@ There are two types of server rendering, based on *when* it happens:
 
 Prefetching is the process of loading a route in the background before the user navigates to it. This makes navigation between routes in your application feel instant, because by the time a user clicks on a link, the data to render the next route is already available client side.
 
-Next.js automatically prefetches routes linked with the [<Link>](https://nextjs.org/docs/app/api-reference/components/link) when they enter the user's viewport.
+Next.js automatically prefetches routes linked with the [`<Link>`](https://nextjs.org/docs/app/api-reference/components/link) when they enter the user's viewport.
 
 ## Streaming
 
