@@ -956,3 +956,108 @@ export default async function Image({ params }: { params: { slug: string } }) {
 
 > `ImageResponse` supports common CSS properties including flexbox and absolute positioning, custom fonts, text wrapping, centering, and nested images. [See the full list of supported CSS properties](https://nextjs.org/docs/app/api-reference/functions/image-response).
 
+# Route Handlers and Middleware
+
+## Route Handlers
+
+Route Handlers allow you to create custom request handlers for a given route using the Web [Request](https://developer.mozilla.org/docs/Web/API/Request) and [Response](https://developer.mozilla.org/docs/Web/API/Response) APIs.
+
+![image-20250703084912732](./images/image-20250703084912732.png)
+
+### Convention
+
+Route Handlers are defined in a [`route.js|ts` file](https://nextjs.org/docs/app/api-reference/file-conventions/route) inside the `app` directory. 
+
+Route Handlers can be nested anywhere inside the `app` directory, similar to `page.js` and `layout.js`. But there **cannot** be a `route.js` file at the same route segment level as `page.js`.
+
+### Supported HTTP Methods
+
+The following [HTTP methods](https://developer.mozilla.org/docs/Web/HTTP/Methods) are supported: `GET`, `POST`, `PUT`, `PATCH`, `DELETE`, `HEAD`, and `OPTIONS`. If an unsupported method is called, Next.js will return a `405 Method Not Allowed` response.
+
+### Extended NextRequest and NextResponse APIs
+
+In addition to supporting the native [Request](https://developer.mozilla.org/docs/Web/API/Request) and [Response](https://developer.mozilla.org/docs/Web/API/Response) APIs, Next.js extends them with [`NextRequest`](https://nextjs.org/docs/app/api-reference/functions/next-request) and [`NextResponse`](https://nextjs.org/docs/app/api-reference/functions/next-response) to provide convenient helpers for advanced use cases.
+
+### Caching
+
+Route Handlers are not cached by default. You can, however, opt into caching for `GET` methods. Other supported HTTP methods are **not** cached. To cache a `GET` method, use a [route config option](https://nextjs.org/docs/app/api-reference/file-conventions/route-segment-config#dynamic) such as `export const dynamic = 'force-static'` in your Route Handler file.
+
+```ts
+export const dynamic = 'force-static'
+ 
+export async function GET() {
+  const res = await fetch('https://data.mongodb-api.com/...', {
+    headers: {
+      'Content-Type': 'application/json',
+      'API-Key': process.env.DATA_API_KEY,
+    },
+  })
+  const data = await res.json()
+ 
+  return Response.json({ data })
+}
+```
+
+> **Good to know**: Other supported HTTP methods are **not** cached, even if they are placed alongside a `GET` method that is cached, in the same file.
+
+### Special Route Handlers
+
+Special Route Handlers like [`sitemap.ts`](https://nextjs.org/docs/app/api-reference/file-conventions/metadata/sitemap), [`opengraph-image.tsx`](https://nextjs.org/docs/app/api-reference/file-conventions/metadata/opengraph-image), and [`icon.tsx`](https://nextjs.org/docs/app/api-reference/file-conventions/metadata/app-icons), and other [metadata files](https://nextjs.org/docs/app/api-reference/file-conventions/metadata) remain static by default unless they use Dynamic APIs or dynamic config options.
+
+### Route Resolution
+
+You can consider a `route` the lowest level routing primitive.
+
+- They **do not** participate in layouts or client-side navigations like `page`.
+- There **cannot** be a `route.js` file at the same route as `page.js`.
+
+Each `route.js` or `page.js` file takes over all HTTP verbs for that route.
+
+## Middleware
+
+Middleware allows you to run code before a request is completed. Then, based on the incoming request, you can modify the response by rewriting, redirecting, modifying the request or response headers, or responding directly.
+
+### Use cases
+
+Some common scenarios where Middleware is effective include:
+
+- Quick redirects after reading parts of the incoming request
+- Rewriting to different pages based on A/B tests or experiments
+- Modifying headers for all pages or a subset of pages
+
+Middleware is *not* a good fit for:
+
+- Slow data fetching
+- Session management
+
+Using fetch with `options.cache`, `options.next.revalidate`, or `options.next.tags`, has no effect in Middleware.
+
+### Convention
+
+Use the file `middleware.ts` (or `.js`) in the root of your project to define Middleware. For example, at the same level as `pages` or `app`, or inside `src` if applicable.
+
+> **Note**: While only one `middleware.ts` file is supported per project, you can still organize your middleware logic into modules. Break out middleware functionalities into separate `.ts` or `.js` files and import them into your main `middleware.ts` file. This allows for cleaner management of route-specific middleware, aggregated in the `middleware.ts` for centralized control. By enforcing a single middleware file, it simplifies configuration, prevents potential conflicts, and optimizes performance by avoiding multiple middleware layers.
+
+### Example
+
+```ts
+import { NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
+ 
+// This function can be marked `async` if using `await` inside
+export function middleware(request: NextRequest) {
+  return NextResponse.redirect(new URL('/home', request.url))
+}
+ 
+// See "Matching Paths" below to learn more
+export const config = {
+  // matcher 告诉中间件只在这些路径上运行
+  // `*` 表示匹配单个路径段
+  // `+` 表示匹配一个或多个路径段
+  // `?` 表示匹配零个或一个路径段
+  // `:path*` 表示匹配所有后续路径
+  matcher: '/about/:path*',
+}
+```
+
+Read more about [using `middleware`](https://nextjs.org/docs/app/guides/backend-for-frontend#middleware), or refer to the `middleware` [API reference](https://nextjs.org/docs/app/api-reference/file-conventions/middleware).
