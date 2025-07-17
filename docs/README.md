@@ -44,6 +44,14 @@ sidebarDepth: 4
 
 #### 2025
 
+##### July
+
+* [07-16](./English/daily-words/2025/July/07-16.md)
+
+##### February
+
+* [02-26](./English/daily-words/2025/February/02-26.md)
+
 ##### January
 
 * [01-15](./English/daily-words/2025/January/01-15.md)
@@ -51,9 +59,7 @@ sidebarDepth: 4
 * [01-08](./English/daily-words/2025/January/01-08.md)
 * [01-03](./English/daily-words/2025/January/01-03.md)
 
-##### February
 
-* [02-26](./English/daily-words/2025/February/02-26.md)
 
 #### 2024
 

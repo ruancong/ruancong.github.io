@@ -1,3 +1,9 @@
+---
+sidebarDepth: 1
+title: template
+---
+
+
 ## emulate
 
 <VocabularyAudio vocabulary="emulate" />
