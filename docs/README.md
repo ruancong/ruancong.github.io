@@ -52,6 +52,7 @@ sidebarDepth: 4
 * [07-13](./English/daily-words/2025/July/07-13.md)
 * [07-12](./English/daily-words/2025/July/07-12.md)
 * [07-11](./English/daily-words/2025/July/07-11.md)
+* [07-10](./English/daily-words/2025/July/07-10.md)
 
 ##### February
 
