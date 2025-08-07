@@ -80,6 +80,13 @@ sudo docker run hello-world
 
 ***
 
+**将当前用户添加到docker组**
+
+```shell
+sudo usermod -aG docker $USER
+```
+
+
 ## 启动  docker/getting-started 教程
 
 ```shell
