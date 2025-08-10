@@ -8,6 +8,7 @@ sidebarDepth: 4
 
 ### Linux
 * [linux笔记](./Linux/linux.md)
+* [commands](./Linux/commands.md)
 
 ### Backend
 #### 问题解决   
