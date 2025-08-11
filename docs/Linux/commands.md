@@ -516,7 +516,7 @@ SYNOPSIS
 
 crontab 用于编辑crontab 文件，cron 用于执行
 
-<img src=".\images\image-20240228221515302.png" alt="image-20240228221515302" style="zoom:33%;" />
+<img src="./images/image-20240228221515302.png" alt="image-20240228221515302" style="zoom:33%;" />
 
 ### apropose
 
