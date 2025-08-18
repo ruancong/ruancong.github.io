@@ -2019,3 +2019,11 @@ Docker 对这两种数据类型都有相应的支持方式。
 **Docker 卷是 Docker API 中的一等公民，并使用 docker volume 子命令独立管理。** 这意味着删除容器并不会删除容器所使用的卷。
 
 在 Docker 环境中，**推荐使用卷来保存持久化数据**。 
+
+## 其它
+
+### 反向生成 docker run 命令
+
+```shell
+docker run --rm -v /var/run/docker.sock:/var/run/docker.sock assaflavie/runlike <你的容器ID或名称>
+```

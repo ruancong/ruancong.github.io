@@ -13,10 +13,15 @@ sidebarDepth: 4
 ### Backend
 #### 问题解决   
 * [问题解决纪录](./Backend/problem-solved/问题解决.md)
+
 #### docker
 * [docker](./Backend/docker/docker.md)
 * [Raft共识算法](./Backend/docker/raft.md)
 * [脑裂（Split-Brain）](./Backend/docker/split-brain.md)
+
+#### k8s
+* [k8s](./Backend/k8s/k8s.md)
+
 #### network
 * [网络基础知识](./Backend/network/network-basis.md)
 #### MinIO
