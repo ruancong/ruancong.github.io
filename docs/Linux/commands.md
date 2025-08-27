@@ -459,6 +459,11 @@ touch file1.txt; sleep 10; rm -f file1.txt;
 与 `netstat` 相似。但是更新更全面
 
 ```shell
+# 有些pid需要使用sudo才能查询到
+sudo ss -ltnp | grep 8080
+```
+
+```shell
 LISTEN 0   4096            0.0.0.0:3306    0.0.0.0:*  users:(("docker-proxy",pid=21804,fd=4))
 ```
 

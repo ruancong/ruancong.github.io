@@ -916,6 +916,7 @@ su命令可以解决切换用户身份的需求，使得当前用户在不退出
 ```
 
 上面的su命令与用户名之间有一个减号（-），这意味着完全切换到新的用户，即把环境变量信息也变更为新用户的相应信息，而不是保留原始的信息。强烈建议在切换用户身份时添加这个减号（-）。
+> sudo -i 和 sudo su - 的功能是等价的，都提供一个完整的 root 登录环境
 
 sudo命令用于给普通用户提供额外的权限，语法格式为“sudo [参数] 用户名”。
 
@@ -1583,6 +1584,12 @@ systemctl --type=target list-units
 
 ```shell
 systemctl list-dependencies [targetName]
+```
+
+查看某个进程id的状态
+
+```shell
+systemctl status [pid]
 ```
 
 ### journalctl
