@@ -56,6 +56,14 @@ The components of a Kubernetes cluster:
 * Starting with Kubernetes v1.25, the API server offers server side field validation that detects unrecognized or
   duplicate fields in an object. It provides all the functionality of kubectl --validate on the server side.
 
+  > **服务端试运行 (Server-side Dry Run)**
+  >
+  > ```shell
+  > kubectl apply -f <your-manifest>.yaml --dry-run=server
+  > ```
+  >
+  > 如果文件有错误，它会像上面的例子一样报错。如果文件格式正确，它会返回一个成功的提示（但不会真的创建资源）。**总之，--dry-run=server 是一个非常安全的验证工具。** 它的设计初衷就是为了让您在真正部署到集群之前，百分之百确认您的配置清单是有效且被集群所接受的，而无需担心会意外创建或修改任何东西。
+  
 * When you create an object in Kubernetes, you must provide the object spec that describes its desired state, as well as
   some basic information about the object (such as a name).
 
@@ -177,7 +185,6 @@ The components of a Kubernetes cluster:
   >
   > 第 3 步：确认 k3d 节点的端口映射 (最可能的原因)
   
-
 * 最快、最直接的绕过网络问题的方法，我们在上次讨论中也提到了。它不依赖任何端口映射，而是直接在你的电脑和 Service 之间建立一条隧道。
 
   > ```shell
@@ -188,15 +195,345 @@ The components of a Kubernetes cluster:
 * 在k3d里测试时，设置type=LoadBalancer时没有用，即使设置k3d cluster create my-cluster -p "8080:80@loadbalancer"，
   需要映射type=NodePort 的端口，如8080:30080
 
-* 
+*  Service `type` 是 `ClusterIP`【默认值】时ip不直接暴露到集群外部，只能被集群内的 Ingress 控制器找到。type为loadBalancer时, 端口会暴露到集群外。【在k3d中测试时，把service的type设置为loadBalance并不生效】
 
-## 未同步的
+  > `LoadBalancer` 类型是 `NodePort` 的扩展。它会向底层云平台（如 AWS, GCP, Azure）请求一个外部负载均衡器，并将这个负载均衡器的 IP 地址作为 Service 的外部访问入口。
+  >
+  > - **作用**：这是将服务暴露到公网的 **标准方式**。云服务提供商会为你创建一个负载均衡器，并将流量导向你所有节点的 `NodePort`。
+  > - **使用场景**：适用于生产环境，当你需要一个稳定、高可用的公网 IP 来暴露你的服务时。
+
+* `kubectl describe pod` 命令。它会告诉你 Pod 启动过程中发生的详细事件记录。
+
+* Deployment 要能够正常工作（特别是运行多个副本、进行滚动更新和自我修复），其底层的 Pod 必须通过类似 `generateName` 的机制来创建，以保证每个 Pod 名称的唯一性
+
+* 在 Deployment（以及 ReplicaSet, StatefulSet, Job, CronJob 等这类控制器）的 Pod 模板（`spec.template`）中，`metadata.name` 这个字段是**不能设置**的。如果你尝试设置它，Kubernetes API Server 会拒绝你的请求。
+
+* 一个 Deployment 实际上并不直接管理 Pod，它的工作流程是这样的：
+
+  1. **Deployment**: 你创建了一个 Deployment 资源，它的名称是固定的（比如 `nginx-deployment`）。这个 Deployment 负责管理“版本”。
+  2. **ReplicaSet**: Deployment 会根据自己的 Pod 模板，创建一个 **ReplicaSet** 资源。这个 ReplicaSet 的名称是**动态生成的**，通常是 `[Deployment名称]-[Pod模板的哈希值]`，例如 `nginx-deployment-66b6c48dd5`。这个哈希值确保了每次你更新 Deployment 的 Pod 模板时（比如更换镜像版本），都会创建一个全新的、不同名称的 ReplicaSet。
+  3. **Pod**: ReplicaSet 的任务很简单，就是确保有指定数量的、符合其模板的 Pod 正在运行。它会根据自己的名称作为**前缀**，去创建 Pod。所以，最终 Pod 的名称也是**动态生成的**，格式通常是 `[ReplicaSet名称]-[随机后缀]`，例如 `nginx-deployment-66b6c48dd5-x7p9m`。
+
+* MetalLB (强烈推荐) 这是在自建集群（Bare-Metal）中实现 type: LoadBalancer 的最佳实践方案。MetalLB 是一个开源项目，它能为你的集群模拟云服务商的负载均衡器功能。
+
+* 使用 kubectl explain 命令：这是一个非常有用的命令，可以帮助你了解任何 Kubernetes 资源的结构和字段。例如，如果你想知道 Deployment 的 apiVersion
+
+* 一个完整的应用[系统]，一般只有一个type为loadbalancer的service?
+
+  > * 对于一个完整的、现代化的应用系统（特别是基于微服务架构的 Web 应用），通常最佳实践就是只使用一个 Type=LoadBalancer 的 Service。标准的应用暴露架构：“LoadBalancer + Ingress Controller”
+  >
+  > * 如果你的应用系统包含一些非 HTTP/HTTPS 的服务，比如：
+  >
+  >   * 一个需要直接暴露给外部客户端的 数据库 (如 PostgreSQL)。
+  >   * 一个 MQTT 消息代理服务。
+  >   * 一个 SFTP 文件服务。
+  >
+  >   这些服务工作在 TCP/UDP 层，Ingress Controller（通常为 HTTP 设计）无法处理。在这种情况下，为这些特定的服务再额外创建一个独立的 Type=LoadBalancer Service 是完全合理的。
+
+* 怎么知道我的pod有没有启动成功？
+
+  > 1. 宏观检查：`kubectl get pods`
+  > 2. 详细诊断：`kubectl describe pod <pod-name>`
+  > 3. 深入应用内部：`kubectl logs <pod-name>【可以用`--previous选择来查看上一次的日志，还可以用-f`】`
+
+* 在用k3d做测试时，集群节点 "看" 不到你本地机器上的 Docker 镜像
+
+  > 1. 使用 `k3d image import` 命令
+  >
+  >    `k`3d image import springboot3:v1.0.10 -c my-cluster``
+  >
+  > 2. **修改你的 Deployment YAML 文件**
+  >
+  >    imagePullPolicy: IfNotPresent # <-- 关键！添加这一行
+  >
+  > 在生产环境或更复杂的开发环境中，最佳实践是搭建一个镜像仓库（Registry），比如 Harbor、Nexus，或者直接使用 Docker Hub、阿里云 ACR 等。
+
+* 确认 Pod 内的应用是否真的正常工作
+
+  > 运行以下命令，它会在你的本地 `8084` 端口和 Deployment 中的一个 Pod 的 `8084` 端口之间建立一个临时的、直接的通道：
+  >
+  > ```shell
+  > kubectl port-forward deployment/springboot3-deployment 8084:8084
+  > ```
+  > 还可以在在集群内部测试 ：
+  >
+  > **启动一个临时的测试 Pod**：我们可以运行一个包含 `curl` 等网络工具的临时 Pod。
+  >
+  > ```shell
+  > # 运行一个临时的 busybox Pod，并在结束后自动删除
+  > kubectl run my-test-pod --image=busybox -it --rm -- sh
+  > ## kubectl run my-debug-pod --image=curlimages/curl -i --tty --rm -- /bin/sh 这个也可以
+  > ```
+  >
+  > **在临时 Pod 内通过 Service 名称访问**：Kubernetes 自带了 DNS 服务，你可以直接通过 Service 的名称来访问它。
+  >
+  > ```shell
+  > # 假设你已经在 my-test-pod 的 shell 中
+  > # 语法: wget -qO- http://<service-name>:<service-port>
+  > wget -qO- http://springboot3-service:8084
+  > ```
+  >
+  > 如果返回了应用的正确响应，说明 Service 的服务发现和端口转发都是正常的。
+
+* In cases when objects represent a physical entity, like a Node representing a physical host, when the host is re-created under the same name without deleting and re-creating the Node, Kubernetes treats the new host as the old one, which may lead to inconsistencies.
+
+  > 1. 标记节点不可调度
+  >
+  >    kubectl cordon worker-01
+  >
+  > 2. **驱逐节点上的所有 Pod**
+  >
+  >    kubectl drain worker-01 --ignore-daemonsets
+  >
+  > 3. 从 Kubernetes 中删除节点对象
+  >
+  >    kubectl delete node worker-01
+
+* The server may generate a name when generateName is provided instead of name in a resource create request. When generateName is used, the provided value is used as a name prefix, which server appends a generated suffix to.
+
+  > Kubernetes v1.31以后会重试8次以使生成唯一的名字
+
+* 什么时候会单独定义和使用 Pod
+
+  > **场景示例**：你想测试一下集群内部的网络是否通畅，或者想看某个 `Service` 是否能被访问到。
+  >
+  > **操作**：你可以快速创建一个包含网络工具（如 `curl`, `ping`, `dig`）的 Pod，然后通过 `kubectl exec` 进入这个 Pod 进行调试。调试结束后，直接删除这个 Pod 即可，不留任何痕迹。
+  >
+  > **示例 YAML (**`debug-pod.yaml`**)：**
+  >
+  > ```yaml
+  > apiVersion: v1
+  > kind: Pod
+  > metadata:
+  > 	name: curl-pod
+  > 	spec:
+  > 		containers:
+  > \# 我们用一个包含 curl 的镜像，并让它一直运行，以便我们能 exec 进去
+  > 			- name: my-curl
+  >               image: curlimages/curl:latest
+  >         command: ["sleep", "3600"] # 让容器保持运行，否则它会立即退出
+  > ```
+  >
+  > **使用命令**:
+  >
+  > ```shell
+  > # 创建 Pod
+  > kubectl apply -f debug-pod.yaml
+  > 
+  > # 进入 Pod 内部执行命令
+  > kubectl exec -it curl-pod -- sh
+  > 
+  > # (在 Pod 内部)
+  > # curl <your-service-name>.<namespace>.svc.cluster.local
+  > # exit
+  > 
+  > # 调试完毕后删除 Pod
+  > kubectl delete pod curl-pod 
+  > ```
+
+* Keep in mind that label Key must be unique for a given object
+
+* Labels are key/value pairs. Valid label keys have two segments: an optional prefix and name, separated by a slash (/).
+
+  > Valid label value:
+  >
+  > - must be 63 characters or less (can be empty),
+  > - unless empty, must begin and end with an alphanumeric character (`[a-z0-9A-Z]`),
+  > - could contain dashes (`-`), underscores (`_`), dots (`.`), and alphanumerics between.
+
+* The API currently supports two types of selectors: equality-based and set-based. 
+
+* If the prefix is omitted, the label Key is presumed to be private to the user. Automated system components (e.g. kube-scheduler, kube-controller-manager, kube-apiserver, kubectl, or other third-party automation) which add labels to end-user objects must specify a prefix.
+
+*  the comma separator acts as a logical AND (&&) operator.
+
+* selector: { component: redis } 是旧版的、简洁的写法。
+
+  selector: { matchLabels: { component: redis } } 是新版的、更结构化、更推荐的写法。
+
+  Kubernetes API 在处理第一种写法时，会自动将其理解为第二种写法。
+
+* Newer resources, such as Job, Deployment, ReplicaSet, and DaemonSet, support set-based requirements as well.
+
+  > ```yaml
+  > selector:
+  >   matchLabels:
+  >     component: redis
+  >   matchExpressions:
+  >     - { key: tier, operator: In, values: [cache] }
+  >     - { key: environment, operator: NotIn, values: [dev] }
+  > 
+  > ```
+
+* set-based requirements 应用用引号包起来
+
+  > kubectl get pods -l 'environment in (production),tier in (frontend)'
+
+* kubectl get pods -l environment=production,tier=frontend
+
+* kubectl get pods -Lapp -Ltier -Lrole
+
+  > ‘-L’ 参数不是过滤作用，而是在最终的查询结果中以列的形式显示
+
+* 更新label
+
+  > ```shell
+  > kubectl label pods -l app=nginx tier=fe
+  > ```
+  >
+  > This first filters all pods with the label "app=nginx", and then labels them with the "tier=fe"。除了用-l app=nginx标签来过滤，还可以用pod的名字来过滤需要操作的pods
+  >
+  > 默认情况下，当已经存在tier标签时，不会更新成功。可以加入`kubectl label --overwrite pods`这个参数
+
+*  Names of resources need to be unique within a namespace, but not across namespaces.
+
+* Namespace-based scoping is applicable only for namespaced objects (e.g. Deployments, Services, etc.) and not for cluster-wide objects (e.g. StorageClass, Nodes, PersistentVolumes, etc.)
+
+* For a production cluster, consider not using the default namespace. Instead, make other namespaces and use those.
+
+* Kubernetes starts with four initial namespaces:
+
+  > 1. default
+  > 2. kube-node-lease
+  > 3. kube-public
+  > 4. kube-system
+
+* Avoid creating namespaces with the prefix kube-, since it is reserved for Kubernetes system namespaces.
+
+* kubectl get namespace
+
+* To set the namespace for a current request, use the --namespace flag.
+
+  > ```shell
+  > kubectl run nginx --image=nginx --namespace=<insert-namespace-name-here>
+  > kubectl get pods --namespace=<insert-namespace-name-here>
+  > ```
+
+* You can permanently save the namespace for all subsequent kubectl commands in that context.
+
+  > ```shell
+  > kubectl config set-context --current --namespace=<insert-namespace-name-here>
+  > # Validate it
+  > kubectl config view --minify | grep namespace:
+  > ```
+
+* When you create a Service, it creates a corresponding DNS entry. This entry is of the form <service-name>.<namespace-name>.svc.cluster.local
+
+  > 同一个namespace下的应用可以直接通过应用名解析到，而不同的namespace下则需要使用**全限定域名。** <service-name>.<namespace-name>.svc.cluster.local
+
+* Not all objects are in a namespace
+
+  > However namespace resources are not themselves in a namespace. And low-level resources, such as nodes and persistentVolumes, are not in any namespace.
+  >
+  > ```shell
+  > # In a namespace
+  > kubectl api-resources --namespaced=true
+  > 
+  > # Not in a namespace
+  > kubectl api-resources --namespaced=false
+  > ```
+
+* The Kubernetes control plane sets an immutable label kubernetes.io/metadata.name on all namespaces. The value of the label is the namespace name
+
+  > kubectl describe namespaces kube-system
+
+* The keys and the values in the map must be strings. In other words, you cannot use numeric, boolean, list or other types for either the keys or the values.
+
+* Annotations are key/value pairs. Valid annotation keys have two segments: an optional prefix and name, separated by a slash (/). 
+
+  > The name segment is required and must be 63 characters or less, beginning and ending with an alphanumeric character (`[a-z0-9A-Z]`) with dashes (`-`), underscores (`_`), dots (`.`), and alphanumerics between.
+
+* Field selectors are essentially resource filters. By default, no selectors/filters are applied, meaning that all resources of the specified type are selected. This makes the kubectl queries kubectl get pods and kubectl get pods --field-selector "" equivalent.
+
+* You can use the =, ==, and != operators with field selectors (= and == mean the same thing). 
+
+  > kubectl get services --all-namespaces --field-selector metadata.namespace!=default
+
+* As with label and other selectors, field selectors can be chained together as a comma-separated list. 
+
+  > kubectl get pods --field-selector=status.phase!=Running,spec.restartPolicy=Always
+
+* Finalizer 是一个存在于资源对象 metadata 中的字符串列表。
+
+* 这个 Finalizer 确保了当你删除这个 Service 时，Kubernetes 会先调用云平台的 API 去删除那个真实的、会产生费用的负载均衡器，然后再删除 Service 对象本身。如果没有这个机制，你可能会留下很多无人管理的“僵尸”云资源。
+
+  > **Finalizer**: `service.kubernetes.io/load-balancer-cleanup` (在一些云厂商的实现中)
+
+* 为什么资源会卡在 Terminating 状态？🚨
+  这是你在实践中一定会遇到的经典问题。当一个资源长时间处于 Terminating 状态时，几乎 100% 是 Finalizer 导致的。
+
+  > **原因**：负责清理并移除那个 Finalizer 的控制器**无法完成它的工作**。
+
+* Finalizers are namespaced keys that tell Kubernetes to wait until specific conditions are met before it fully deletes resources marked for deletion. Finalizers alert controllers to clean up resources the deleted object owned.
+
+  > **Marked for deletion (标记为删除)**: 资源有了 `deletionTimestamp`，处于 `Terminating` 状态。它对外已经“死亡”（比如 Pod 不再接收流量），但它的“尸体”（在 etcd 中的记录）还在。
+  >
+  > **Fully deleted (彻底删除)**: 资源的记录从 etcd 中被彻底抹除，它不复存在了。
+  >
+  > **Specific conditions are met (特定条件被满足)**: 这个“特定条件”非常明确，**指的就是** `metadata.finalizers` **列表变为空**。
+  >
+  > 那么谁来清空这个列表呢？答案是**控制器 (Controller)**。
+  >
+  > - 每个 Finalizer 字符串都对应一个正在运行的控制器。
+  > - 这个控制器一直在监控，当它发现自己负责的资源出现了 `deletionTimestamp` 时，它就知道该干活了（执行清理任务）。
+  > - 清理任务完成后（比如云硬盘被删了，数据库备份好了），控制器就会发起一个 API 请求，把自己负责的那个 Finalizer 字符串从列表中**移除**。
+  > - 当所有控制器都完成了自己的任务，`finalizers` 列表就变空了。
+  >
+  > 
+  >
+  > 
+  >
+  > 它实际上是一个**字符串**。这些字符串存在于一个列表里，位置在 `metadata.finalizers`
+  >
+  > 它们像带有名空间的键一样，是独一无二的标识符
+  >
+  > 简单来说：你可以把它理解为“带有唯一前缀的特殊标签”。
+  >
+  > ```yaml
+  > metadata:
+  >   finalizers:
+  >   - kubernetes.io/pv-protection  # 一个遵循 "namespaced key" 格式的字符串
+  >   - another.tool.com/do-backup    # 另一个遵循同样格式的字符串
+  > ```
+
+* Custom finalizer names must be publicly qualified finalizer names, such as example.com/finalizer-name. Kubernetes enforces this format; the API server rejects writes to objects where the change does not use qualified finalizer names for any custom finalizer.
+
+* Dependent objects also have an ownerReferences.blockOwnerDeletion field that takes a boolean value and controls whether specific dependents can block garbage collection from deleting their owner object. Kubernetes automatically sets this field to true if a controller (for example, the Deployment controller) sets the value of the metadata.ownerReferences field. You can also set the value of the blockOwnerDeletion field manually to control which dependents block garbage collection.
+
+  > 关系链: Deployment -> ReplicaSet -> Pod。
+  >
+  > 删除链: 删除 Deployment -> 删除 ReplicaSet -> 删除 Pod。
+  >
+  > blockOwnerDeletion: true: 是一个 “刹车”。Dependent 对象对 Owner 说：“别删我老板，除非我先走！”
+  >
+  > kubectl delete deployment 触发的是一个“有序解散”，而非“斩首行动【直接删除deployment】”
+
+* In foreground deletion, it adds the foreground finalizer so that the controller must delete dependent resources that also have ownerReferences.blockOwnerDeletion=true before it deletes the owner.
+
+* kubectl delete deployment my-app --cascade=orphan
+
+  > **会发生什么？**
+  >
+  > 1. `Deployment` **对象被立即删除**：`my-app` 这个 `Deployment` 资源瞬间就消失了。
+  > 2. `ReplicaSet` **和** `Pod` **完好无损**：你会惊讶地发现，`ReplicaSet` 和所有的 `Pod` 依然在运行！
+  > 3. `ReplicaSet` **成为孤儿**：如果你查看那个幸存的 `ReplicaSet` 的 YAML (`kubectl get rs <rs-name> -o yaml`)，你会发现它 `metadata` 里的 `ownerReferences` 字段**已经不见了**。它不再属于任何人，变成了一个独立的、没人管理的 `ReplicaSet`。
+
+* Shared labels and annotations share a common prefix: app.kubernetes.io. Labels without a prefix are private to users. The shared prefix ensures that shared labels do not interfere with custom user labels.
+
+  > **Shared Labels** 是一套 **官方推荐的、标准化的标签**。它们使用 `app.kubernetes.io/` 这个统一的前缀，目的是为了让不同的工具、团队和用户能够用一种通用的方式来描述和识别在 Kubernetes 中运行的应用程序
+
+* The metadata is organized around the concept of an application. Kubernetes is not a platform as a service (PaaS) and doesn't have or enforce a formal notion of an application. Instead, applications are informal and described with metadata. The definition of what an application contains is loose.
+
+* There are two mechanisms that Kubernetes uses to publish these API specifications
+
+  > 1. The Discovery API
+  > 2. The Kubernetes OpenAPI Document
 
 * Pods that are part of a DaemonSet tolerate being run on an unschedulable Node. DaemonSets typically provide node-local
   services that should run on the Node even if it is being drained of workload applications.
 
-  > 在 Kubernetes 中，这些“必须安装在每个节点上”的后台服务，就是通过 DaemonSet 来部署的。常见的例子有：日志收集器，节点监控器，网络插件，存储插件
-
+* > 在 Kubernetes 中，这些“必须安装在每个节点上”的后台服务，就是通过 DaemonSet 来部署的。常见的例子有：日志收集器，节点监控器，网络插件，存储插件
+  
 * In case of a Node, it is implicitly assumed that an instance using the same name will have the same state (e.g.
   network settings, root disk contents) and attributes like node labels.
 

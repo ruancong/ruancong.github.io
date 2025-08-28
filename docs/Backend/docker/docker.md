@@ -420,6 +420,12 @@ docker run -dp 3000:3000 --network todo-app -e MYSQL_HOST=mysql -e MYSQL_USER=ro
 
   > 这个`version` 只是起到提供信息的作用，并不会用相应的版本去检验docker-compose文件。
 
+* 为什用我本地的yaml文件启动docker compose时，再运行docker compose ls时，它会显示我的配置文件所在的地方，而用portainer启动stack时，再运行dokcer compose ls ,显示却没有了这个stack yaml文件的路径
+
+  > 为了方便管理，docker compose 在创建容器、网络、卷等资源时，会自动为这些资源添加一系列的 Docker 标签。其中一个关键的标签是 com.docker.compose.project.config_files，它的值就是您本地配置文件的绝对路径。 Portainer 的自有管理机制：通过 Portainer 的 Web UI 部署一个 Stack 时，它不会添加 docker compose CLI 才会添加的那个 com.docker.compose.project.config_files 标签，因为它根本没有“文件”这个概念，只有“文本内容”
+
+查看labels的方法：使用 docker inspect 命令查看该容器的所有信息。标签信息位于 Config.Labels 或 HostConfig.Labels 下
+
 * Name top-level element
 
   ```yaml
@@ -814,6 +820,17 @@ docker image history getting-started
 * One case where it is appropriate to use [bind mounts](https://docs.docker.com/storage/bind-mounts/) is during development, when you may want to mount your source directory or a binary you just built into your container. For production, use a volume instead, mounting it into the same location as you mounted a bind mount during development.
 * For production, use [secrets](https://docs.docker.com/engine/swarm/secrets/) to store sensitive application data used by services, and use [configs](https://docs.docker.com/engine/swarm/configs/) for non-sensitive data such as configuration files. 
 
+**build缓存**
+
+利用dockerfile在构建应用时，`RUN --mount=type=cache,target=/root/.m2/repository ./mvnw clean package -DskipTests -B` , 当cached后，怎么主动清除这个caches
+
+```shell
+docker builder prune
+#清除所有缓存（包括活动的）：
+docker builder prune -a
+```
+
+
 
 ## 镜像相关
 
@@ -1185,6 +1202,9 @@ docker build --build-arg VERSION=1.19.8 -t myimage .
 
 `ADD`与`COPY`的功能基本相同，但首选`COPY`. `COPY` 只有简单的复制文件或文件夹到镜像的功能，`ADD`除些之外，还有自动解压tar文件，与下载远程文件的功能。除了你需要用到这些特性的情况下才使用`ADD`,不然一般都是选用`COPY`. 
 
+虽然 ADD 命令有时会自动处理权限，但 COPY 不会。为了确保你的 entrypoint.sh 脚本一定能被执行，最好在 Dockerfile 里显式地给它加上执行权限。
+
+
 <span style="color:red">**不鼓励**</span>这个使用：
 
 ```dockerfile
@@ -1268,10 +1288,13 @@ For clarity and reliability, you should always use absolute paths for your `WORK
 
 **To enable BuildKit builds**
 
+最新版本已经默认开启
+
 Easiest way from a fresh install of docker is to set the `DOCKER_BUILDKIT=1` environment variable when invoking the `docker build` command, such as:
 
 ```shell
 $ DOCKER_BUILDKIT=1 docker build .
+
 ```
 
 To enable docker BuildKit by default, set daemon configuration in `/etc/docker/daemon.json` feature to true and restart the daemon:
@@ -1780,7 +1803,6 @@ Libnetwork 实现了基本的**服务发现**和基本容器负载均衡。
 
         ::: 
         
-        
     *   **Libnetwork** 是 CNM 的开源且跨平台的实现，由 Docker 使用。
         
         *   Docker 将网络代码从守护进程中分离出来，并将其重构到一个名为 Libnetwork 的外部库中。
@@ -1790,7 +1812,7 @@ Libnetwork 实现了基本的**服务发现**和基本容器负载均衡。
     
         *   Docker 包括多个内置驱动程序，通常称为本机或本地驱动程序，包括用于 Linux 的 Bridge、Overlay 和 Macvlan，以及用于 Windows 的 NAT、Overlay、传输和 L2Bridge。
         *   第三方还可以编写 Docker 网络驱动程序。这些被称为远程驱动程序。示例包括 Calico、Contiv、Kuryr 和 Weave。
-
+    
         控制层、管理层与数据层的关系:
         
         <div style="text-align: center;">
