@@ -52,6 +52,10 @@ sidebarDepth: 4
 
 #### 2025
 
+##### September
+
+* [09-03](./English/daily-words/2025/September/09-03.md)
+
 ##### July
 
 * [07-16](./English/daily-words/2025/July/07-16.md)

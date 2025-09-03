@@ -589,5 +589,5 @@ kubectl api-resources --api-group=""
   two supported mechanisms are as follows:
     * Discovery API 就像是这本书的 “目录”。
     * OpenAPI Document 就像是这本书 “正文内容中所有名词的详细解释和语法结构说明”
-* 这是最简单、最安全，也是最推荐的本地调试方法。kubectl proxy 命令会在你的本地机器上启动一个代理服务器，它负责将你的本地请求安全地转发到
+* 这是最简单、最安全，也是最推荐的本地调试方法。`kubectl proxy` 命令会在你的本地机器上启动一个代理服务器，它负责将你的本地请求安全地转发到
   k3d 集群内部的 API Server。
