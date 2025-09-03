@@ -59,7 +59,7 @@ The components of a Kubernetes cluster:
   > **服务端试运行 (Server-side Dry Run)**
   >
   > ```shell
-  > kubectl apply -f <your-manifest>.yaml --dry-run=server
+  > kubectl apply -f [your-manifest].yaml --dry-run=server
   > ```
   >
   > 如果文件有错误，它会像上面的例子一样报错。如果文件格式正确，它会返回一个成功的提示（但不会真的创建资源）。**总之，--dry-run=server 是一个非常安全的验证工具。** 它的设计初衷就是为了让您在真正部署到集群之前，百分之百确认您的配置清单是有效且被集群所接受的，而无需担心会意外创建或修改任何东西。
@@ -233,8 +233,8 @@ The components of a Kubernetes cluster:
 * 怎么知道我的pod有没有启动成功？
 
   > 1. 宏观检查：`kubectl get pods`
-  > 2. 详细诊断：`kubectl describe pod <pod-name>`
-  > 3. 深入应用内部：`kubectl logs <pod-name>【可以用`--previous选择来查看上一次的日志，还可以用-f`】`
+  > 2. 详细诊断：`kubectl describe pod [pod-name]`
+  > 3. 深入应用内部：`kubectl logs [pod-name]【可以用`--previous选择来查看上一次的日志，还可以用-f`】`
 
 * 在用k3d做测试时，集群节点 "看" 不到你本地机器上的 Docker 镜像
 
@@ -269,7 +269,7 @@ The components of a Kubernetes cluster:
   >
   > ```shell
   > # 假设你已经在 my-test-pod 的 shell 中
-  > # 语法: wget -qO- http://<service-name>:<service-port>
+  > # 语法: wget -qO- http://[service-name]:[service-port]
   > wget -qO- http://springboot3-service:8084
   > ```
   >
@@ -324,7 +324,7 @@ The components of a Kubernetes cluster:
   > kubectl exec -it curl-pod -- sh
   > 
   > # (在 Pod 内部)
-  > # curl <your-service-name>.<namespace>.svc.cluster.local
+  > # curl [your-service-name].[namespace].svc.cluster.local
   > # exit
   > 
   > # 调试完毕后删除 Pod
@@ -405,21 +405,21 @@ The components of a Kubernetes cluster:
 * To set the namespace for a current request, use the --namespace flag.
 
   > ```shell
-  > kubectl run nginx --image=nginx --namespace=<insert-namespace-name-here>
-  > kubectl get pods --namespace=<insert-namespace-name-here>
+  > kubectl run nginx --image=nginx --namespace=[insert-namespace-name-here]
+  > kubectl get pods --namespace=[insert-namespace-name-here]
   > ```
 
 * You can permanently save the namespace for all subsequent kubectl commands in that context.
 
   > ```shell
-  > kubectl config set-context --current --namespace=<insert-namespace-name-here>
+  > kubectl config set-context --current --namespace=[insert-namespace-name-here]
   > # Validate it
   > kubectl config view --minify | grep namespace:
   > ```
 
-* When you create a Service, it creates a corresponding DNS entry. This entry is of the form <service-name>.<namespace-name>.svc.cluster.local
+* When you create a Service, it creates a corresponding DNS entry. This entry is of the form [service-name].[namespace-name].svc.cluster.local
 
-  > 同一个namespace下的应用可以直接通过应用名解析到，而不同的namespace下则需要使用**全限定域名。** <service-name>.<namespace-name>.svc.cluster.local
+  > 同一个namespace下的应用可以直接通过应用名解析到，而不同的namespace下则需要使用**全限定域名。** [service-name].[namespace-name].svc.cluster.local
 
 * Not all objects are in a namespace
 
@@ -479,10 +479,6 @@ The components of a Kubernetes cluster:
   > - 清理任务完成后（比如云硬盘被删了，数据库备份好了），控制器就会发起一个 API 请求，把自己负责的那个 Finalizer 字符串从列表中**移除**。
   > - 当所有控制器都完成了自己的任务，`finalizers` 列表就变空了。
   >
-  > 
-  >
-  > 
-  >
   > 它实际上是一个**字符串**。这些字符串存在于一个列表里，位置在 `metadata.finalizers`
   >
   > 它们像带有名空间的键一样，是独一无二的标识符
@@ -516,7 +512,7 @@ The components of a Kubernetes cluster:
   >
   > 1. `Deployment` **对象被立即删除**：`my-app` 这个 `Deployment` 资源瞬间就消失了。
   > 2. `ReplicaSet` **和** `Pod` **完好无损**：你会惊讶地发现，`ReplicaSet` 和所有的 `Pod` 依然在运行！
-  > 3. `ReplicaSet` **成为孤儿**：如果你查看那个幸存的 `ReplicaSet` 的 YAML (`kubectl get rs <rs-name> -o yaml`)，你会发现它 `metadata` 里的 `ownerReferences` 字段**已经不见了**。它不再属于任何人，变成了一个独立的、没人管理的 `ReplicaSet`。
+  > 3. `ReplicaSet` **成为孤儿**：如果你查看那个幸存的 `ReplicaSet` 的 YAML (`kubectl get rs [rs-name] -o yaml`)，你会发现它 `metadata` 里的 `ownerReferences` 字段**已经不见了**。它不再属于任何人，变成了一个独立的、没人管理的 `ReplicaSet`。
 
 * Shared labels and annotations share a common prefix: app.kubernetes.io. Labels without a prefix are private to users. The shared prefix ensures that shared labels do not interfere with custom user labels.
 
