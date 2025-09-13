@@ -315,9 +315,7 @@ yum info iproute
 rpm -ql [option]
 ```
 
-
-
-### 18. yum
+###  yum
 
 yum安装软件会自动下载需要的依赖
 
@@ -376,9 +374,39 @@ yum provides semanage
 yum search java | grep openjdk
 ```
 
+### apt
 
+* 查找已经安装的软件
 
-### 19. alias
+  ```shell
+  apt list --installed | grep -i chrome
+  ## 或者
+  dpkg -l | grep -i chrome
+  ## 如果您还能找到当初安装的那个.deb文件，可以使用dpkg命令查看它的包信息：
+  dpkg -I /路径/到/您的文件名.deb
+  ```
+
+* 卸载
+
+  ```shell
+  ## 标准卸载（这个命令会删除软件，但保留可能存在的配置文件。）
+  sudo apt remove package-name
+  # 彻底卸载（清除所有文件）：
+  sudo apt purge package-name
+  # 清理不再需要的依赖
+  sudo apt autoremove
+  ```
+
+### dpkg
+
+* 要查询 `/usr/bin/java` 这个文件是由哪个软件包安装的
+
+  ```shell
+  # -S 相当于 --search
+  dpkg -S /usr/bin/java
+  ```
+
+### alias
 
 查看命令别名
 To make an alias permanent, you can add it to a shell configuration file such as `~/.bashrc` or `~/.bash_aliases`. These files are executed every time you start a new shell session, so any alias commands defined in these files will be available in all future shell sessions.
