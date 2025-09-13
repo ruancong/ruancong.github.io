@@ -1,10 +1,29 @@
-## Kubernetes Components
+## 测试工具安装
+
+1. 安装kubectl
+
+   ```shell 
+   # 第一步
+   curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+   # 第二步
+   sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
+   # 验证版本号
+   kubectl version --client
+   ```
+
+2. 安装k3d
+
+   参数 `https://k3d.io/stable/#releases`
+
+## 官方文档笔记
+
+### Kubernetes Components
 
 The components of a Kubernetes cluster:
 
 ![image-20250815091851689](./images/image-20250815091851689.png)
 
-## 官方文档笔记
+### Pod
 
 * Pods are the smallest deployable units of computing that you can create and manage in Kubernetes
 
@@ -18,6 +37,8 @@ The components of a Kubernetes cluster:
 
 * The name of a Pod must be a valid DNS subdomain value, but this can produce unexpected results for the Pod hostname.
   For best compatibility, the name should follow the more restrictive rules for a DNS label
+
+### Deployment
 
 * Deployment：负责管理和维护你的应用实例（Pod）。它会确保指定数量的 Nginx Pod 正在运行。如果某个 Pod 挂掉了，Deployment
   会自动创建一个新的来替代它
@@ -42,11 +63,12 @@ The components of a Kubernetes cluster:
 
 * 仅仅修改并保存在本地 configs/ 目录下的 YAML 文件，并不会对集群产生任何影响。 Kubernetes 集群完全不知道你本地文件的变化。你必须通过
   kubectl apply 这个动作，明确地告诉 Kubernetes：“请按照我最新的配置文件，去同步集群的状态。”
+
   ```shell
    kubectl diff -f configs/
   ```
 
-* Our previous example (replicas): The change from kubectl scale was NOT retained because the replicas field was "owned"
+  Our previous example (replicas): The change from kubectl scale was NOT retained because the replicas field was "owned"
   by your YAML file. apply enforced your file's value.
 
 * The note's meaning (LoadBalancer example): Changes from other controllers (like adding a clusterIP) ARE retained
@@ -63,14 +85,14 @@ The components of a Kubernetes cluster:
   > ```
   >
   > 如果文件有错误，它会像上面的例子一样报错。如果文件格式正确，它会返回一个成功的提示（但不会真的创建资源）。**总之，--dry-run=server 是一个非常安全的验证工具。** 它的设计初衷就是为了让您在真正部署到集群之前，百分之百确认您的配置清单是有效且被集群所接受的，而无需担心会意外创建或修改任何东西。
-  
+
 * When you create an object in Kubernetes, you must provide the object spec that describes its desired state, as well as
   some basic information about the object (such as a name).
 
 * Almost every Kubernetes object includes two nested object fields that govern the object's configuration: the object spec and the object status.
-  
+
 * The status describes the current state of the object, supplied and updated by the Kubernetes system and its components.
-  
+
   > status可以理解为“看起来是什么样”，而state是“实际是什么样子的”
 
 * Each object in your cluster has a Name that is unique for that type of resource. Every Kubernetes object also has a UID that is unique across your whole cluster.
@@ -305,31 +327,32 @@ The components of a Kubernetes cluster:
   > apiVersion: v1
   > kind: Pod
   > metadata:
-  > 	name: curl-pod
-  > 	spec:
-  > 		containers:
-  > \# 我们用一个包含 curl 的镜像，并让它一直运行，以便我们能 exec 进去
-  > 			- name: my-curl
-  >               image: curlimages/curl:latest
-  >         command: ["sleep", "3600"] # 让容器保持运行，否则它会立即退出
+  >   name: curl-pod
+  >   spec:
+  >     containers:
+  >       - name: my-curl # 我们用一个包含 curl 的镜像，并让它一直运行，以便我们能 exec 进去
+  >         image: curlimages/curl:latest
+  >     command: ["sleep", "3600"] # 让容器保持运行，否则它会立即退出
   > ```
   >
   > **使用命令**:
   >
-  > ```shell
-  > # 创建 Pod
-  > kubectl apply -f debug-pod.yaml
+  >   ```shell
+  >   # 创建 Pod
+  >   kubectl apply -f debug-pod.yaml
+  >   
+  >   # 进入 Pod 内部执行命令
+  >   kubectl exec -it curl-pod -- sh
+  >   
+  >   # (在 Pod 内部)
+  >   # curl [your-service-name].[namespace].svc.cluster.local
+  >   # exit
+  >   
+  >   # 调试完毕后删除 Pod
+  >   kubectl delete pod curl-pod 
+  >   ```
+  >
   > 
-  > # 进入 Pod 内部执行命令
-  > kubectl exec -it curl-pod -- sh
-  > 
-  > # (在 Pod 内部)
-  > # curl [your-service-name].[namespace].svc.cluster.local
-  > # exit
-  > 
-  > # 调试完毕后删除 Pod
-  > kubectl delete pod curl-pod 
-  > ```
 
 * Keep in mind that label Key must be unique for a given object
 
@@ -541,23 +564,15 @@ The components of a Kubernetes cluster:
   > 可以把 Taint (污点) 想象成节点（Node）上的一个“排斥标签”或者“谢绝入内”的牌子。 一旦一个节点被打上了某个
   Taint，Kubernetes 的调度器（Scheduler）默认就不会把任何 Pod 调度到这个节点上。这就好像一个房间门口挂着“请勿打扰”的牌子，正常情况下，没有人会进去。
 
-* 执行这个命令，你会看到 kubectl 正在向 apiserver 发出一系列的 GET 请求来发现资源
-
-```shell
-kubectl get pods --v=8
-```
-
-* --api-group="" 表示查询核心组
-
-```shell
-kubectl api-resources --api-group=""
-```
+### Kubernetes API 
 
 * 首先，我们必须明白 Discovery API 的目的。无论是 kubectl、Rancher UI 还是任何其他与 Kubernetes 集群交互的客户端，它们在执行操作之前，都需要先知道：
-  “这个集群里有哪些 API Group？” (例如 apps, batch, networking.k8s.io 等)。“每个 Group 下有哪些版本？” (例如 apps group 下有
-  v1)“每个 Group/Version 下有哪些资源 (Resource)？” (例如 apps/v1 下有 deployments, statefulsets, daemonsets 等)
-  “这些资源支持哪些操作 (Verb)？” (例如 deployments 支持 create, get, list, delete 等)
-
+  
+  * “这个集群里有哪些 API Group？”: (例如 apps, batch, networking.k8s.io 等)。
+  * “每个 Group 下有哪些版本？” : (例如 apps group 下有v1)“
+  * 每个 Group/Version 下有哪些资源 (Resource)？” : (例如 apps/v1 下有 deployments, statefulsets, daemonsets 等)
+  * “这些资源支持哪些操作 (Verb)？” : (例如 deployments 支持 create, get, list, delete 等)
+  
 * Unaggregated Discovery (非聚合发现)
   Unaggregated Discovery 指的是 单个 API 服务器自身 提供的、关于 它自己所能服务的 API 的发现信息。
 
@@ -565,10 +580,11 @@ kubectl api-resources --api-group=""
   Aggregated Discovery 正是 Kubernetes API Aggregation Layer (聚合层) 的强大之处。它提供了一个 统一的、聚合后 的视图。
   当客户端（如 kubectl）查询主 kube-apiserver 的发现端点时，聚合层不仅会返回 kube-apiserver 自己的 API 信息，还会智能地将所有已注册的扩展
   API 服务器（通过 APIService 对象注册）的发现信息也一并包含进来并返回。
+  
 * Kubernetes offers stable support for aggregated discovery, publishing all resources supported by a cluster through two
   endpoints (/api and /apis).
-  > * /api: 列出核心 API Group (只有 v1)。
-  > * /apis: 列出所有非核心的 API Group (如 apps, batch, apiextensions.k8s.io 等)。
+  > * /api: 列出核心 API Group (只有 v1)。【**核心 API (Core API)** 或称为**历史遗留 API (Legacy API)**】
+  > * /apis: 列出所有非核心的 API Group (如 apps, batch, apiextensions.k8s.io 等)。【分组 API (Grouped API)】
       >   为什么会有两个端点： 最初的设计: 在 Kubernetes 的早期，所有的 API 资源对象（如 Pod, Service, Node,
       ReplicationController 等）都被放在一个没有名字的 API Group 里，这个 Group 就是我们所说的“核心组 (Core Group)
       ”。由于它没有名字，为了访问它，API Server 就提供了 /api/v1 这个特殊的端点。在当时，这就是 Kubernetes 的全部 API。
@@ -578,12 +594,52 @@ kubectl api-resources --api-group=""
       apps 组：包含 Deployment, StatefulSet, DaemonSet 等。batch 组：包含 Job, CronJob 等。 networking.k8s.io 组：包含
       Ingress, NetworkPolicy 等。 所有这些“命名组”的 API 都通过一个统一的前缀 /apis 来访问，例如
       /apis/apps/v1，/apis/batch/v1。
+  
+* 执行这个命令，你会看到 kubectl 正在向 apiserver 发出一系列的 GET 请求来发现资源
+
+  ```shell
+  kubectl get pods --v=8
+  ```
+
+* 查询所有可用api
+
+  ```shell
+  kubectl api-versions
+  ```
+
+* 直接访问 API Server去查询有哪些有用api-versions
+
+  `kubectl` 命令实际上是在后台向 Kubernetes API Server 发送 HTTP 请求。我们也可以手动模拟这个过程来探索 API。为了安全地访问 API Server，最简单的方式是使用 `kubectl proxy`。
+
+  在一个终端中运行以下命令，让这个终端保持运行。
+
+  ```shell
+  kubectl proxy
+  ```
+
+  打开另一个终端，使用 `curl` 进行查询。
+
+  ```shell
+  curl http://127.0.0.1:8001/api
+  ## /apis
+  curl http://127.0.0.1:8001/apis
+  ```
+
+* 查询所有可用的 API 资源 (`api-resources`)
+
+  ```shell
+  kubectl api-resources
+  # --api-group="" 表示查询核心组
+  kubectl api-resources --api-group=""
+  ```
 
 * Without indicating the resource type using the Accept header, the default response for the /api and /apis endpoint is
   an unaggregated discovery document.
+  
 * the kubectl tool fetches and caches the API specification for enabling command-line completion and other features. The
   two supported mechanisms are as follows:
+  
     * Discovery API 就像是这本书的 “目录”。
     * OpenAPI Document 就像是这本书 “正文内容中所有名词的详细解释和语法结构说明”
-* 这是最简单、最安全，也是最推荐的本地调试方法。`kubectl proxy` 命令会在你的本地机器上启动一个代理服务器，它负责将你的本地请求安全地转发到
-  k3d 集群内部的 API Server。
+  
+  
