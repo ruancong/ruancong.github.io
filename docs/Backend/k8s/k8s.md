@@ -143,9 +143,9 @@ The components of a Kubernetes cluster:
   >
   > 简单来说，只要你不删除这个 Service 对象（`kubectl delete service my-service`），它的 `ClusterIP` 和 DNS 名称就**不会改变**。
   >
-  >  FQDN (Fully Qualified Domain Name)： <service-name>.<namespace-name>.svc.<cluster-domain>.
+  >  FQDN (Fully Qualified Domain Name)： [service-name].[namespace-name].svc.[cluster-domain].
   >
-  > * `<cluster-domain>` 集群域名是集群级别的配置，通常是固定的。最可靠的查找方法是进入任意一个正在运行的 Pod，查看它的 DNS 配置文件 `/etc/resolv.conf`
+  > * `[cluster-domain]` 集群域名是集群级别的配置，通常是固定的。最可靠的查找方法是进入任意一个正在运行的 Pod，查看它的 DNS 配置文件 `/etc/resolv.conf`
   >
   >   ```shell
   >   # 1. 首先，随便找一个正在运行的 Pod
