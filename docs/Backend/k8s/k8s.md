@@ -115,9 +115,7 @@ The components of a Kubernetes cluster:
 
   > 在 Kubernetes 中，这些“必须安装在每个节点上”的后台服务，就是通过 DaemonSet 来部署的。常见的例子有：日志收集器，节点监控器，网络插件，存储插件
 
-## 
-
-Deployment
+##  Deployment
 
 * Deployment：负责管理和维护你的应用实例（Pod）。它会确保指定数量的 Nginx Pod 正在运行。如果某个 Pod 挂掉了，Deployment
   会自动创建一个新的来替代它
@@ -736,3 +734,171 @@ Kubernetes objects are persistent entities in the Kubernetes system. Kubernetes 
 ## Workloads
 
 A workload is an application running on Kubernetes. Whether your workload is a single component or several that work together, on Kubernetes you run it inside a set of [*pods*](https://kubernetes.io/docs/concepts/workloads/pods/). In Kubernetes, a Pod represents a set of running [containers](https://kubernetes.io/docs/concepts/containers/) on your cluster.
+
+several **built-in workload resources**:
+
+* [Deployment](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/) and [ReplicaSet](https://kubernetes.io/docs/concepts/workloads/controllers/replicaset/) (replacing the legacy resource [ReplicationController](https://kubernetes.io/docs/reference/glossary/?all=true#term-replication-controller)).
+* [StatefulSet](https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/) 
+* [DaemonSet](https://kubernetes.io/docs/concepts/workloads/controllers/daemonset/) defines Pods that provide facilities that are local to nodes. 
+* [Job](https://kubernetes.io/docs/concepts/workloads/controllers/job/) and [CronJob](https://kubernetes.io/docs/concepts/workloads/controllers/cron-jobs/) provide different ways to define tasks that run to completion and then stop. You can use a [Job](https://kubernetes.io/docs/concepts/workloads/controllers/job/) to define a task that runs to completion, just once. You can use a [CronJob](https://kubernetes.io/docs/concepts/workloads/controllers/cron-jobs/) to run the same Job multiple times according a schedule.
+
+In the wider Kubernetes ecosystem, you can find third-party workload resources that provide additional behaviors. Using a [custom resource definition](https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/custom-resources/), you can add in a third-party workload resource if you want a specific behavior that's not part of Kubernetes' core. 
+
+### Pods
+
+*Pods* are the smallest deployable units of computing that you can create and manage in Kubernetes. 你可以把一个 Pod 想象成一台独立的“逻辑主机”或虚拟机。这台“主机”有自己唯一的 IP 地址。
+
+Pods in a Kubernetes cluster are used in two main ways:
+
+- **Pods that run a single container**. 
+
+- **Pods that run multiple containers that need to work together**. 
+
+  You should use this pattern only in specific instances in which your containers are tightly coupled. You don't need to run multiple containers to provide replication (for resilience or capacity);
+
+#### Using Pods
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx
+spec:
+  containers:
+  - name: nginx
+    image: nginx:1.14.2
+    ports:
+    - containerPort: 80
+```
+
+Pods are generally not created directly and are created using workload resources. Instead, create them using workload resources such as [Deployment](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/) or [Job](https://kubernetes.io/docs/concepts/workloads/controllers/job/). If your Pods need to track state, consider the [StatefulSet](https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/) resource.
+
+#### Working with Pods
+
+Pods are designed as relatively ephemeral, disposable entities. The Pod remains on that node until the Pod finishes execution, the Pod object is deleted, the Pod is *evicted* for lack of resources, or the node fails.
+
+> #### Note:
+>
+> Restarting a container in a Pod should not be confused with restarting a Pod. A Pod is not a process, but an environment for running container(s). A Pod persists until it is deleted.
+
+The name of a Pod must be a valid [DNS subdomain](https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#dns-subdomain-names) value, but this can produce unexpected results for the Pod hostname. For best compatibility, the name should follow the more restrictive rules for a [DNS label](https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#dns-label-names).
+
+##### Pod OS
+
+1. 对 `.spec.os.name` 字段的理解
+
+   在 Pod 的 YAML 中设置 `.spec.os.name` 字段**并不会影响 `kube-scheduler` (调度器) 的实际调度决策**。它的主要作用有两点：
+
+   1. **声明与识别 (Declaration & Identification)**: 它是一个明确的元数据字段，用来**声明**这个 Pod 内的容器是为哪个操作系统构建的（目前是 `linux` 或 `windows`）。这使得集群中的其他组件或工具（比如监控系统、安全策略工具）能够轻松识别 Pod 的操作系统类型。
+   2. **策略应用 (Policy Enforcement)**: 如文档中提到的，`Pod Security Standards` (Pod 安全标准) 会利用这个字段。例如，某些安全策略只适用于 Linux 环境（比如与 `seccomp` 或 `AppArmor` 相关的策略），在 Windows 节点上强制执行这些策略是没有意义的。通过读取 `.spec.os.name`, 系统可以智能地避免在不相关的操作系统上应用这些策略。
+   3. **面向未来 (Future-proofing)**: 社区可能在未来的版本中赋予这个字段更多的功能，甚至可能直接影响调度。但就目前而言，它更多的是一个描述性、供其他组件消费的字段。
+
+2. `kubernetes.io/os` Label 打在哪个资源上？
+
+   `kubernetes.io/os` 是一个 **Node Label** (节点标签)。它被打在 **Node (节点)** 资源上。你可以通过以下命令来查看你集群中所有节点的标签:
+
+   ```shell
+   kubectl get nodes --show-labels
+   ```
+
+   > `kubernetes.io/os` 这个标签主要是**由 `kubelet` 自动添加**的。
+   >
+   > kubectl describe node [your-node-name] 看到相应的System Info
+
+3. 到底是什么决定了 Pod 分配到对应的操作系统？
+
+   真正决定 Pod 被调度到特定操作系统节点上的机制，是 **Pod Spec (Pod 规约) 中的调度约束**与 **Node (节点) 上的标签**之间的匹配。
+
+   ```yaml
+   apiVersion: v1
+   kind: Pod
+   metadata:
+     name: my-windows-pod
+   spec:
+     # 步骤 1: 声明 Pod 的操作系统类型
+     # 这本身不影响调度，但是一个好习惯，也为了符合安全策略等。
+     os:
+       name: windows
+    ...
+     nodeSelector:
+       kubernetes.io/os: windows
+   ```
+
+为了方便你记忆，我们可以做一个简单的类比：
+
+| 字段/机制                         | 功能                   | 好比是...                                                    |
+| --------------------------------- | ---------------------- | ------------------------------------------------------------ |
+| **`.spec.os.name`**               | **声明 (Declaration)** | 包裹上的“内含物品”清单，写着“Windows 软件”。                 |
+| **Node Label `kubernetes.io/os`** | **属性 (Attribute)**   | 每个房门上的标签，写着“本户使用 Windows 系统”或“本户使用 Linux 系统”。 |
+| **Pod `nodeSelector`**            | **指令 (Instruction)** | 快递单上的“投递要求”，明确指示：“必须投递到使用 Windows 系统的住户”。 |
+
+##### Pods and controllers
+
+You can use workload resources to create and manage multiple Pods for you.
+
+Here are some examples of workload resources that manage one or more Pods:
+
+- [Deployment](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/)
+- [StatefulSet](https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/)
+- [DaemonSet](https://kubernetes.io/docs/concepts/workloads/controllers/daemonset)
+
+##### Pod templates
+
+PodTemplates are specifications for creating Pods, and are included in workload resources such as [Deployments](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/), [Jobs](https://kubernetes.io/docs/concepts/workloads/controllers/job/), and [DaemonSets](https://kubernetes.io/docs/concepts/workloads/controllers/daemonset/).  The `PodTemplate` is part of the desired state of whatever workload resource you used to run your app.
+
+the sample:
+
+```yaml
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: hello
+spec:
+  template:
+    # This is the pod template
+    spec:
+      containers:
+      - name: hello
+        image: busybox:1.28
+        command: ['sh', '-c', 'echo "Hello, Kubernetes!" && sleep 3600']
+      restartPolicy: OnFailure
+    # The pod template ends here
+```
+
+#### Pod update and replacement
+
+Kubernetes doesn't prevent you from managing Pods directly. 虽然 Kubernetes **允许** 你直接操作 Pod，但这通常是一种**反模式（anti-pattern）**，主要用于调试或紧急情况。
+
+用edit 交互式去更新：`kubectl edit pod [pod-name]` ；还可以用patch去更新 `kubectl patch pod my-test-pod -p '{"spec":{"activeDeadlineSeconds":60}}'`
+
+#### Resource sharing and communication
+
+pod内的containers共用一个ip, 不同的container如果想要expose端口，只能是不同的。同一pod里面的container用localhost+端口进行通讯
+
+#### Static Pods
+
+我们平时用 `kubectl apply -f my-pod.yaml` 创建的 Pod，我们称之为**标准 Pod** 或 **API Server 管理的 Pod**。它们的生命周期完全由 Kubernetes 的控制平面（特别是 API Server）来管理。
+
+而**静态 Pod**则完全不同。
+
+- **定义**：静态 Pod 是直接由特定节点上的 **Kubelet** 守护进程管理的 Pod，它不通过 API Server 进行管理。
+- **来源**：Kubelet 会监视其所在节点上的一个特定目录（通常是 `/etc/kubernetes/manifests`）。任何放在这个目录下的标准 Pod 定义 YAML/JSON 文件，都会被 Kubelet 自动识别并创建为静态 Pod。
+- **生命周期**：
+  - **创建**：将 Pod 的 YAML 文件放入 Kubelet 的监视目录。
+  - **删除**：从该目录中删除 Pod 的 YAML 文件。
+  - **更新**：修改该目录中的 Pod YAML 文件（Kubelet 会自动停止旧的 Pod，并根据新文件启动新的 Pod）。
+
+**镜像 Pod (Mirror Pod)**
+现在我们回到了你问题的核心。既然静态 Pod 不受 API Server 管理，那我们执行 kubectl get pods 时，能看到它们吗？如果看不到，那集群管理员就无法感知到这些关键组件的存在，这会给监控和管理带来麻烦。
+
+* **定义**：当 Kubelet 在节点上成功创建了一个静态 Pod 后，它会**自动地**、**主动地**在 API Server 上为这个静态 Pod 创建一个对应的、**只读的**对象。这个在 API Server 上的对象就叫做“镜像 Pod”。
+* **目的**：它的唯一目的就是让这个静态 Pod 在 Kubernetes 的 API 中**可见 (Visible)**。
+
+#### Pods with multiple containers
+
+For example, you might have a container that acts as a web server for files in a shared volume, and a separate [sidecar container](https://kubernetes.io/docs/concepts/workloads/pods/sidecar-containers/) that updates those files from a remote source, as in the following diagram:
+
+![image-20250919162927803](./images/image-20250919162927803.png)
+
+
+
