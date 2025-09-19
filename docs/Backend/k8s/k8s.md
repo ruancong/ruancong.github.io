@@ -15,15 +15,13 @@
 
    参数 `https://k3d.io/stable/#releases`
 
-## 官方文档笔记
-
-### Kubernetes Components
+## Kubernetes Components
 
 The components of a Kubernetes cluster:
 
 ![image-20250815091851689](./images/image-20250815091851689.png)
 
-### Pod
+## Pod
 
 * Pods are the smallest deployable units of computing that you can create and manage in Kubernetes
 
@@ -117,7 +115,9 @@ The components of a Kubernetes cluster:
 
   > 在 Kubernetes 中，这些“必须安装在每个节点上”的后台服务，就是通过 DaemonSet 来部署的。常见的例子有：日志收集器，节点监控器，网络插件，存储插件
 
-### Deployment
+## 
+
+Deployment
 
 * Deployment：负责管理和维护你的应用实例（Pod）。它会确保指定数量的 Nginx Pod 正在运行。如果某个 Pod 挂掉了，Deployment
   会自动创建一个新的来替代它
@@ -134,7 +134,7 @@ The components of a Kubernetes cluster:
   2. **ReplicaSet**: Deployment 会根据自己的 Pod 模板，创建一个 **ReplicaSet** 资源。这个 ReplicaSet 的名称是**动态生成的**，通常是 `[Deployment名称]-[Pod模板的哈希值]`，例如 `nginx-deployment-66b6c48dd5`。这个哈希值确保了每次你更新 Deployment 的 Pod 模板时（比如更换镜像版本），都会创建一个全新的、不同名称的 ReplicaSet。
   3. **Pod**: ReplicaSet 的任务很简单，就是确保有指定数量的、符合其模板的 Pod 正在运行。它会根据自己的名称作为**前缀**，去创建 Pod。所以，最终 Pod 的名称也是**动态生成的**，格式通常是 `[ReplicaSet名称]-[随机后缀]`，例如 `nginx-deployment-66b6c48dd5-x7p9m`。
 
-### Servcie
+## Servcie
 
 * Service：负责为一组 Pod 提供一个稳定、统一的访问入口。因为 Pod 是“短暂”的，它们的 IP 地址会变化。Service 提供了一个固定的
   IP 地址和 DNS 名称，使得其他应用或外部用户可以方便地访问到你的 Nginx 服务，而无需关心后端具体是哪个 Pod 在提供服务。
@@ -186,7 +186,7 @@ The components of a Kubernetes cluster:
   > - **作用**：这是将服务暴露到公网的 **标准方式**。云服务提供商会为你创建一个负载均衡器，并将流量导向你所有节点的 `NodePort`。
   > - **使用场景**：适用于生产环境，当你需要一个稳定、高可用的公网 IP 来暴露你的服务时。
 
-### Config file
+## Config file
 
 * kubectl 默认会在你的用户主目录下的 .kube 文件夹中寻找名为 config 的文件。
 
@@ -225,7 +225,7 @@ The components of a Kubernetes cluster:
   >
   > 如果文件有错误，它会像上面的例子一样报错。如果文件格式正确，它会返回一个成功的提示（但不会真的创建资源）。**总之，--dry-run=server 是一个非常安全的验证工具。** 它的设计初衷就是为了让您在真正部署到集群之前，百分之百确认您的配置清单是有效且被集群所接受的，而无需担心会意外创建或修改任何东西。
 
-### Object
+## Object
 
 Kubernetes objects are persistent entities in the Kubernetes system. Kubernetes uses these entities to represent the state of your cluster. Learn about the Kubernetes object model and how to work with these objects.
 
@@ -296,7 +296,7 @@ Kubernetes objects are persistent entities in the Kubernetes system. Kubernetes 
   >
   >    kubectl delete node worker-01
 
-### Kubernetes API 
+## Kubernetes API 
 
 * There are two mechanisms that Kubernetes uses to publish these API specifications
 
@@ -379,7 +379,7 @@ Kubernetes objects are persistent entities in the Kubernetes system. Kubernetes 
     * Discovery API 就像是这本书的 “目录”。
     * OpenAPI Document 就像是这本书 “正文内容中所有名词的详细解释和语法结构说明”
 
-### k3d 测试相关
+## k3d 测试相关
 
 * 在生产环境中，通常会有多个 Master 节点（在 k3d/k3s 里被称为 Server 节点）来确保高可用性。你不会直接连接到某一个 Master 节点，因为如果那个节点宕机了，你就无法访问集群了。正确的做法是连接到一个**负载均衡器 (Load Balancer)**，由它来将你的请求转发给后面健康的 Master 节点。
 
@@ -404,7 +404,7 @@ Kubernetes objects are persistent entities in the Kubernetes system. Kubernetes 
   >
   > 在生产环境或更复杂的开发环境中，最佳实践是搭建一个镜像仓库（Registry），比如 Harbor、Nexus，或者直接使用 Docker Hub、阿里云 ACR 等。
 
-### Label
+## Label
 
 
 * Labels are key/value pairs. Valid label keys have two segments: an optional prefix and name, separated by a slash (/).
@@ -459,7 +459,7 @@ Kubernetes objects are persistent entities in the Kubernetes system. Kubernetes 
   >
   > 默认情况下，当已经存在tier标签时，不会更新成功。可以加入`kubectl label --overwrite pods`这个参数
 
-### Namespace
+## Namespace
 
 
 * Namespace-based scoping is applicable only for namespaced objects (e.g. Deployments, Services, etc.) and not for cluster-wide objects (e.g. StorageClass, Nodes, PersistentVolumes, etc.)
@@ -510,7 +510,7 @@ Kubernetes objects are persistent entities in the Kubernetes system. Kubernetes 
 
 * The keys and the values in the map must be strings. In other words, you cannot use numeric, boolean, list or other types for either the keys or the values.
 
-### Annotations
+## Annotations
 
 
 * Annotations are key/value pairs. Valid annotation keys have two segments: an optional prefix and name, separated by a slash (/). 
@@ -523,7 +523,7 @@ Kubernetes objects are persistent entities in the Kubernetes system. Kubernetes 
 
 * The metadata is organized around the concept of an application. Kubernetes is not a platform as a service (PaaS) and doesn't have or enforce a formal notion of an application. Instead, applications are informal and described with metadata. The definition of what an application contains is loose.
 
-### Field selectors
+## Field selectors
 
 
 * Field selectors are essentially resource filters. By default, no selectors/filters are applied, meaning that all resources of the specified type are selected. This makes the kubectl queries kubectl get pods and kubectl get pods --field-selector "" equivalent.
@@ -536,7 +536,7 @@ Kubernetes objects are persistent entities in the Kubernetes system. Kubernetes 
 
   > kubectl get pods --field-selector=status.phase!=Running,spec.restartPolicy=Always
 
-### Finalizer
+## Finalizer
 
 
 * Finalizer 是一个存在于资源对象 metadata 中的字符串列表。
@@ -600,7 +600,7 @@ Kubernetes objects are persistent entities in the Kubernetes system. Kubernetes 
   > 2. `ReplicaSet` **和** `Pod` **完好无损**：你会惊讶地发现，`ReplicaSet` 和所有的 `Pod` 依然在运行！
   > 3. `ReplicaSet` **成为孤儿**：如果你查看那个幸存的 `ReplicaSet` 的 YAML (`kubectl get rs [rs-name] -o yaml`)，你会发现它 `metadata` 里的 `ownerReferences` 字段**已经不见了**。它不再属于任何人，变成了一个独立的、没人管理的 `ReplicaSet`。
 
-### 其它
+## 其它
 
 * `kind: Ingress` 会暴露一个 IP 地址吗？
 
@@ -692,3 +692,47 @@ Kubernetes objects are persistent entities in the Kubernetes system. Kubernetes 
 
   > 可以把 Taint (污点) 想象成节点（Node）上的一个“排斥标签”或者“谢绝入内”的牌子。 一旦一个节点被打上了某个
   > Taint，Kubernetes 的调度器（Scheduler）默认就不会把任何 Pod 调度到这个节点上。这就好像一个房间门口挂着“请勿打扰”的牌子，正常情况下，没有人会进去。
+
+## Container
+
+### Container hooks
+
+- PostStart
+
+  However, if the `PostStart` hook takes too long to execute or if it hangs, it can prevent the container from transitioning to a `running` state.
+
+- PreStop
+
+  `PreStop` hooks are not executed asynchronously from the signal to stop the Container; the hook must complete its execution before the TERM signal can be sent. 
+
+> **Hook 失败的影响**：
+>
+> - `postStart` Hook 失败：如果 `postStart` Hook 执行失败，容器将无法进入 `Running` 状态，`kubelet` 会杀死并尝试重启这个容器，导致 Pod 进入 `CrashLoopBackOff` 状态。
+> - `preStop` Hook 失败：`preStop` Hook 的失败不会阻止容器的终止。Kubernetes 在尝试执行 `preStop` Hook 后（无论成功与否），仍然会向容器的主进程发送 `TERM` 信号。
+>
+> 其实也可以总结为这两个hook只要有一个失败，容器都会被killed
+
+### Hook handler implementations
+
+- Exec
+
+1. **执行环境**：`Exec` 类型的 Hook Handler **完全在容器内部执行**。它和你在容器启动后使用 `kubectl exec` 或 `docker exec` 进入容器执行命令的环境是一模一样的。
+2. **资源归属**：因此，这个脚本或命令所消耗的 **所有资源（CPU、内存等）都计算在该容器的账上**。它会受到为该容器配置的 `resources.limits` 和 `resources.requests` 的约束。
+3. - 
+
+- HTTP
+- Sleep
+
+>  `httpGet`, `tcpSocket` ([deprecated](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.31/#lifecyclehandler-v1-core)) and `sleep` are executed by the kubelet process, and `exec` is executed in the container.
+
+### Hook delivery guarantees
+
+这些hook可能会运行多次。这个概念在分布式系统中非常常见，被称为 **“至少一次 (At-Least-Once)”** 投递语义
+
+### Debugging Hook handlers
+
+这些Hook handlers如果执行失败，可以执行像类似的语句来查看日志`kubectl describe pod lifecycle-demo`
+
+## Workloads
+
+A workload is an application running on Kubernetes. Whether your workload is a single component or several that work together, on Kubernetes you run it inside a set of [*pods*](https://kubernetes.io/docs/concepts/workloads/pods/). In Kubernetes, a Pod represents a set of running [containers](https://kubernetes.io/docs/concepts/containers/) on your cluster.
