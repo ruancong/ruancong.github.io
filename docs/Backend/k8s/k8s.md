@@ -53,6 +53,14 @@ The components of a Kubernetes cluster:
   > kubectl port-forward deployment/springboot3-deployment 8084:8084
   > ```
   >
+  > > 在你的**本地计算机**和集群内的 **Pod** 之间，通过 Kubernetes API Server 建立了一条**临时的、加密的、点对点的通信隧道**。
+  > >
+  > > **没有负载均衡**：`port-forward` 不会在多个副本（replicas）之间轮询或分发流量。所有请求都会被送到同一个 Pod 实例上。
+  > >
+  > > **会话是“粘性”的**：在你按下 `Ctrl+C` 结束 `port-forward` 命令之前，这个隧道会一直连接到最初选定的那个 Pod。
+  > >
+  > > **没有自动故障转移**：如果在 `port-forward` 运行期间，它连接的那个 Pod 恰好“坏了”并被 Kubernetes 重启，你的 `port-forward` 连接会**中断**，命令会报错并退出。
+  >
   > 还可以在在集群内部测试 ：
   >
   > **启动一个临时的测试 Pod**：我们可以运行一个包含 `curl` 等网络工具的临时 Pod。
@@ -68,7 +76,7 @@ The components of a Kubernetes cluster:
   > ```shell
   > # 假设你已经在 my-test-pod 的 shell 中
   > # 语法: wget -qO- http://[service-name]:[service-port]
-  > wget -qO- http://springboot3-service:8084
+  > wget -qO- http://springboot3-service:80
   > ```
   >
   > 如果返回了应用的正确响应，说明 Service 的服务发现和端口转发都是正常的。
@@ -902,3 +910,51 @@ For example, you might have a container that acts as a web server for files in a
 
 
 
+#### Pod Lifecycle
+
+ Pods follow a defined lifecycle, starting in the `Pending` [phase](https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#pod-phase), moving through `Running` if at least one of its primary containers starts OK, and then through either the `Succeeded` or `Failed` phases depending on whether any container in the Pod terminated in failure.
+
+##### Pod lifetime
+
+Pods are only [scheduled](https://kubernetes.io/docs/concepts/scheduling-eviction/) once in their lifetime; assigning a Pod to a specific node is called *binding*, and the process of selecting which node to use is called *scheduling*. 
+
+You can use [Pod Scheduling Readiness](https://kubernetes.io/docs/concepts/scheduling-eviction/pod-scheduling-readiness/) to delay scheduling for a Pod until all its *scheduling gates* are removed. For example, you might want to define a set of Pods but only trigger scheduling once all the Pods have been created.
+
+> 可以定义不同的调度门，在真的被schedule之前需要相就的controller 被这些调度门都删除
+
+##### Pods and fault recovery
+
+不会把那个旧的、失败的 Pod 实例（identified by a UID）拿起来，拍拍灰尘，然后放到一个新节点上让它继续运行。我们是直接放弃旧的，然后由像 Deployment 这样的控制器创建一个全新的替代品，这个替代品再由调度器找一个新家。
+
+node故障 vs Pod 故障：
+
+| 特性               | 场景 1: 节点宕机 (Node Failure)        | 场景 2: Pod 故障 (Pod Failure on Healthy Node) |
+| ------------------ | -------------------------------------- | ---------------------------------------------- |
+| **主要处理者**     | `kube-controller-manager` (在控制平面) | `kubelet` (在工作节点上)                       |
+| **处理对象**       | 整个 **Pod 对象**                      | Pod 内部的**容器 (Container)**                 |
+| **结果**           | 旧 Pod 被驱逐/删除；**创建全新的 Pod** | **在同一个 Pod 内重启容器**                    |
+| **Pod UID**        | 替代品的 UID 是**新的**                | Pod 的 UID **保持不变**                        |
+| **Pod IP 地址**    | 替代品的 IP 地址是**新的**             | Pod 的 IP 地址**保持不变**                     |
+| **所在节点**       | 替代品被调度到**新的健康节点**上       | 仍然在**原来的节点**上                         |
+| **恢复速度**       | 较慢 (分钟级别，有 5 分钟等待期)       | 非常快 (秒级)                                  |
+| **`kubectl` 表现** | 旧 Pod 消失，新 Pod 出现               | 同一个 Pod 的 `RESTARTS` 计数增加              |
+
+##### Associated lifetimes
+
+When something is said to have the same lifetime as a Pod, such as a [volume](https://kubernetes.io/docs/concepts/storage/volumes/), that means that the thing exists as long as that specific Pod (with that exact UID) exists. 
+
+![image-20250919162927803](./images/image-20250919162927803.png)
+
+这个multi-container Pod 一旦结束生命，那么所关联的Volume也将结束。
+
+##### Pod phase
+
+Here are the possible values for `phase`:
+
+| Value       | Description                                                  |
+| :---------- | :----------------------------------------------------------- |
+| `Pending`   | The Pod has been accepted by the Kubernetes cluster, but one or more of the containers has not been set up and made ready to run. This includes time a Pod spends waiting to be scheduled as well as the time spent downloading container images over the network. |
+| `Running`   | The Pod has been bound to a node, and all of the containers have been created. At least one container is still running, or is in the process of starting or restarting. |
+| `Succeeded` | All containers in the Pod have terminated in success, and will not be restarted. |
+| `Failed`    | All containers in the Pod have terminated, and at least one container has terminated in failure. That is, the container either exited with non-zero status or was terminated by the system, and is not set for automatic restarting. |
+| `Unknown`   | For some reason the state of the Pod could not be obtained. This phase typically occurs due to an error in communicating with the node where the Pod should be running. |
