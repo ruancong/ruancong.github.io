@@ -958,3 +958,31 @@ Here are the possible values for `phase`:
 | `Succeeded` | All containers in the Pod have terminated in success, and will not be restarted. |
 | `Failed`    | All containers in the Pod have terminated, and at least one container has terminated in failure. That is, the container either exited with non-zero status or was terminated by the system, and is not set for automatic restarting. |
 | `Unknown`   | For some reason the state of the Pod could not be obtained. This phase typically occurs due to an error in communicating with the node where the Pod should be running. |
+
+> Make sure not to confuse *Status*, a kubectl display field for user intuition, with the pod's `phase`.  When a pod is failing to start repeatedly, `CrashLoopBackOff` may appear in the `Status` field of some kubectl commands. Similarly, when a pod is being deleted, `Terminating` may appear in the `Status` field of some kubectl commands.
+
+> **Kubernetes Pod 终止生命周期 (v1.27+) 核心知识点**
+>
+> **1. 核心变化：**
+>
+> - 自 K8s v1.27 起，被删除的 Pod 不会从 `Terminating` 状态直接消失。
+> - 它会先根据容器的最终退出码，过渡到一个明确的**终端阶段**：`Succeeded` (所有容器退出码为0) 或 `Failed` (至少一个容器退出码非0)。
+> - **目的**：极大增强了 Pod 的**可观测性**，方便准确追踪一次性任务（如 Job）的最终成败。
+>
+> **2. “终端阶段”停留时长由谁决定？**
+>
+> 这个停留时间由两种机制控制，**优先级从高到低**：
+>
+> - **机制一 (精确控制 - 推荐): `ttlSecondsAfterFinished`**
+>   - **配置**: 在 Pod 或 Job 的 `spec` 中设置 `ttlSecondsAfterFinished: <秒数>`。
+>   - **行为**: Pod 到达 `Succeeded`/`Failed` 状态后，会**精确地**等待指定的秒数，然后被垃圾回收机制自动删除。
+>   - **示例**: 设置为 `100` 则保留100秒；设置为 `0` 则会立即清理。
+> - **机制二 (集群兜底 - 不精确): `terminated-pod-gc-threshold`**
+>   - **触发条件**: 仅当 Pod **未设置** `ttlSecondsAfterFinished` 时此机制才生效。
+>   - **行为**: 由集群控制平面 (`kube-controller-manager`) 的全局参数 `--terminated-pod-gc-threshold` 控制。只有当集群中已终止的 Pod 总数超过此阈值时，才会开始清理最旧的 Pod。
+>   - **结论**: 停留时间**不确定**，可能非常久。
+>
+> **3. 最佳实践：** 为了可预测地管理 Pod 生命周期并保持集群整洁，应始终为你的一次性任务（尤其是 `Job` 资源）**明确设置 `spec.ttlSecondsAfterFinished`**。
+
+##### Container states 
+
