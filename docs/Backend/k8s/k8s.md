@@ -14,6 +14,31 @@
 2. 安装k3d
 
    参数 `https://k3d.io/stable/#releases`
+   
+   安装的k3d默认创建的集群的对应的版本一般不是最新的对应的k8s API的版本。可以用配置文件来指定最新的k3s镜像，来对应k8s版本。
+   
+   ```yaml
+   # k3d 启动的配置文件, 定义使用最新的k3s版本[k8s版本]
+   apiVersion: k3d.io/v1alpha5 # 使用最新的API版本以获得所有功能
+   kind: Simple
+   metadata:
+     name: my-cluster # 可以定义集群名称，也可以不指定，在k3d create cluster时指定
+   image: rancher/k3s:latest # 在这里指定你想要的“默认”K3s镜像版本
+   ```
+   
+   ```shell
+   ## 以下输入是静态的，是跟着k3d的版本走的
+   leite@leite-company ~> k3d version
+   k3d version v5.8.3
+   k3s version v1.31.5-k3s1 (default)
+   ## 输出以下说明已正确应用了最新的k3s版本
+   leite@leite-company ~ [1]> kubectl version
+   Client Version: v1.34.1
+   Kustomize Version: v5.7.1
+   Server Version: v1.34.1+k3s1
+   ```
+   
+   
 
 ## Kubernetes Components
 
@@ -724,12 +749,29 @@ Kubernetes objects are persistent entities in the Kubernetes system. Kubernetes 
 
 1. **执行环境**：`Exec` 类型的 Hook Handler **完全在容器内部执行**。它和你在容器启动后使用 `kubectl exec` 或 `docker exec` 进入容器执行命令的环境是一模一样的。
 2. **资源归属**：因此，这个脚本或命令所消耗的 **所有资源（CPU、内存等）都计算在该容器的账上**。它会受到为该容器配置的 `resources.limits` 和 `resources.requests` 的约束。
-3. - 
 
 - HTTP
 - Sleep
 
->  `httpGet`, `tcpSocket` ([deprecated](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.31/#lifecyclehandler-v1-core)) and `sleep` are executed by the kubelet process, and `exec` is executed in the container.
+>  `httpGet`, `tcpSocket` ([deprecated](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.31/#lifecyclehandler-v1-core)) and `sleep` are executed by the kubelet process (请求的接收和处理发生在容器内，因此**处理该请求所消耗的资源归属于容器**), and `exec` is executed in the container.
+
+配置preStop sample:
+
+```yaml
+spec:
+  containers:
+  - name: nginx
+    image: nginx:1.25
+    ports:
+    - containerPort: 80
+    lifecycle:
+      preStop:
+        ## 或者 httpGet:
+        exec:   
+        ....
+```
+
+
 
 ### Hook delivery guarantees
 
@@ -984,5 +1026,42 @@ Here are the possible values for `phase`:
 >
 > **3. 最佳实践：** 为了可预测地管理 Pod 生命周期并保持集群整洁，应始终为你的一次性任务（尤其是 `Job` 资源）**明确设置 `spec.ttlSecondsAfterFinished`**。
 
-##### Container states 
+##### Container states
+
+There are three possible container states: `Waiting`, `Running`, and `Terminated`.
+
+To check the state of a Pod's containers, you can use `kubectl describe pod <name-of-pod>`.
+
+**`Waiting`**
+
+When you use `kubectl` to query a Pod with a container that is `Waiting`, you also see a Reason field to summarize why the container is in that state.
+
+**`Running`**
+
+When you use `kubectl` to query a Pod with a container that is `Running`, you also see information about when the container entered the `Running` state.
+
+**`Terminated`**
+
+When you use `kubectl` to query a Pod with a container that is `Terminated`, you see a reason, an exit code, and the start and finish time for that container's period of execution.
+
+##### How Pods handle problems with containers
+
+
+
+
+
+
+
+### 为什么需要 `startupProbe`？
+
+
+
+想象一个场景：你有一个复杂的 Java 应用，它启动时需要加载大量数据、预热缓存、建立数据库连接池等，整个过程可能需要2到3分钟。
+
+- **如果没有 `startupProbe`**：你可能会配置一个 `livenessProbe`，让它每10秒检查一次应用的健康状况。但由于应用启动需要180秒，这个 `livenessProbe` 在前170秒内所有的探测都会是失败的。如果你的 `failureThreshold` (失败阈值) 设置为5，那么在第50秒时 (10秒 * 5次)，kubelet 就会认为你的应用已经死了，从而杀死并重启它。这个过程会无限循环，你的应用永远也启动不起来。
+- **有了 `startupProbe`**：你可以专门为这个漫长的启动过程配置一个 `startupProbe`。例如，设置一个很长的探测周期和足够高的失败阈值，给它总共5分钟的时间来完成启动。
+  - 在这5分钟内，只有 `startupProbe` 在工作。
+  - `livenessProbe` 和 `readinessProbe` 会一直“袖手旁观”。
+  - 一旦 `startupProbe` 探测成功，它就“功成身退”，此后永远不会再执行。
+  - 紧接着，`livenessProbe` 和 `readinessProbe` 开始接管，分别负责监控容器在运行期间是否健康以及是否准备好接收流量。
 
