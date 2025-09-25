@@ -1287,3 +1287,57 @@ Using kubectl, You must specify an additional flag `--force` along with `--grace
 ###### Pod shutdown and sidecar containers 
 
 If your Pod includes one or more [sidecar containers](https://kubernetes.io/docs/concepts/workloads/pods/sidecar-containers/) (init containers with an Always restart policy), the kubelet will delay sending the TERM signal to these sidecar containers until the last main container has fully terminated. 
+
+#### Init Containers
+
+
+
+### Kubernetes Init 容器资源管理核心笔记
+
+
+
+
+
+#### 1. 核心概念：`Effective Init Request/Limit`
+
+
+
+- **定义**: 它是 Kubernetes 计算出的一个**中间值**，代表 `init` 阶段对**单一资源**（如 `memory` 或 `cpu`）的最大需求。
+- **计算方法**: 取**所有 `init` 容器**中，对**同一种资源**（`cpu` 或 `memory`）设置的 `request` 或 `limit` 的**最大值**。
+  - `Effective Init Request` = `MAX(init_container_1_request, init_container_2_request, ...)`
+  - `Effective Init Limit` = `MAX(init_container_1_limit, init_container_2_limit, ...)`
+
+
+
+#### 2. Pod 最终资源规格的计算规则
+
+
+
+Pod 启动所需的资源，必须同时满足 `init` 容器（轮流执行）和 `main` 容器（同时执行）的需求。
+
+- **Pod 总请求 (Request)** = `MAX` ( **所有主容器请求之和** , **Effective Init Request** )
+- **Pod 总限制 (Limit)** = `MAX` ( **所有主-容器限制之和** , **Effective Init Limit** )
+
+
+
+#### 3. 关键要点与边界情况
+
+
+
+- **独立计算**: `cpu` 和 `memory` 两种资源的 `request` 和 `limit` 是完全分开独立计算的。
+- **主容器优先**: 如果任何**一个主容器**没有设置 `limit`，那么整个 Pod 的 `limit` 就是**无限制**的。`init` 容器设置的 `limit` 无法约束主容器。
+- **影响 QoS**: 未设置 `limit` 会导致 Pod 的 QoS 等级降为 `Burstable`，在节点资源紧张时有被驱逐的风险。
+- **调度依据**: Pod 的总请求 (`Pod Total Request`) 是调度器 (`kube-scheduler`) 在为 Pod 选择节点时的重要依据。
+
+------
+
+这份笔记应该能很好地帮你回顾和记忆这个知识点。如果需要对其他概念做类似的精简总结，随时告诉我！
+
+### 重启init containers
+
+
+
+| 场景       | 核心触发事件     | Init 记录丢失的角色 | Pod 是否重启 | Init 容器是否重新运行       |
+| ---------- | ---------------- | ------------------- | ------------ | --------------------------- |
+| **第一种** | 主容器全部终止   | 附加条件            | **是**       | **是**（在 Pod 重启流程中） |
+| **第二种** | 仅 Init 记录丢失 | 唯一事件            | **否**       | **否**                      |
