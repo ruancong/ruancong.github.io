@@ -1046,15 +1046,220 @@ When you use `kubectl` to query a Pod with a container that is `Terminated`, you
 
 ##### How Pods handle problems with containers
 
+ Kubernetes 容器崩溃处理流程总结
 
+| 序号  | 描述 (Description)                               | 类型 (Type)                  | 你能看到的 (`kubectl`)                                  |
+| ----- | ------------------------------------------------ | ---------------------------- | ------------------------------------------------------- |
+| **1** | 首次崩溃 (Initial crash)                         | **事件 (Event)**             | 几乎看不到，一闪而过                                    |
+| **2** | 重复崩溃 (Repeated crashes)                      | **过程 (Process)**           | Pod 状态不稳定, `RESTARTS` 计数增加                     |
+| **3** | `CrashLoopBackOff` 状态 (CrashLoopBackOff state) | **状态/原因 (State/Reason)** | 明确看到 `STATUS` 列为 `CrashLoopBackOff`               |
+| **4** | 退避重置 (Backoff reset)                         | **动作 (Action)**            | 看不到这个动作，但能看到结果：Pod 稳定在 `Running` 状态 |
 
+To investigate the root cause of a `CrashLoopBackOff` issue, a user can:
 
+1. **Check logs**: Use `kubectl logs <name-of-pod>` to check the logs of the container. This is often the most direct way to diagnose the issue causing the crashes.
+2. **Inspect events**: Use `kubectl describe pod <name-of-pod>` to see events for the Pod, which can provide hints about configuration or resource issues.
+3. **Review configuration**: Ensure that the Pod configuration, including environment variables and mounted volumes, is correct and that all required external resources are available.
+4. **Check resource limits**: Make sure that the container has enough CPU and memory allocated. Sometimes, increasing the resources in the Pod definition can resolve the issue.
+5. **Debug application**: There might exist bugs or misconfigurations in the application code. Running this container image locally or in a development environment can help diagnose application specific issues.
 
+###### Pod-level container restart policy
 
+The `spec` of a Pod has a `restartPolicy` field with possible values Always, OnFailure, and Never. The default value is Always.
 
-### 为什么需要 `startupProbe`？
+The `restartPolicy` for a Pod applies to [app containers](https://kubernetes.io/docs/reference/glossary/?all=true#term-app-container) in the Pod and to regular [init containers](https://kubernetes.io/docs/concepts/workloads/pods/init-containers/). [Sidecar containers](https://kubernetes.io/docs/concepts/workloads/pods/sidecar-containers/) ignore the Pod-level `restartPolicy` field
 
+After containers in a Pod exit, the kubelet restarts them with an exponential backoff delay (10s, 20s, 40s, …), that is capped at 300 seconds (5 minutes). Once a container has executed for 10 minutes without any problems, the kubelet resets the restart backoff timer for that container.
 
+##### Pod conditions
+
+A Pod has a PodStatus, which has an array of PodConditions through which the Pod has or has not passed. Kubelet manages the following PodConditions:
+
+- `PodScheduled`: the Pod has been scheduled to a node.
+- `PodReadyToStartContainers`: (beta feature; enabled by [default](https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#pod-has-network)) the Pod sandbox has been successfully created and networking configured.
+- `ContainersReady`: all containers in the Pod are ready.
+- `Initialized`: all [init containers](https://kubernetes.io/docs/concepts/workloads/pods/init-containers/) have completed successfully.
+- `Ready`: the Pod is able to serve requests and should be added to the load balancing pools of all matching Services.
+- `DisruptionTarget`: the pod is about to be terminated due to a disruption (such as preemption, eviction or garbage-collection).
+- `PodResizePending`: a pod resize was requested but cannot be applied. See [Pod resize status](https://kubernetes.io/docs/tasks/configure-pod-container/resize-container-resources/#pod-resize-status).
+- `PodResizeInProgress`: the pod is in the process of resizing. See [Pod resize status](https://kubernetes.io/docs/tasks/configure-pod-container/resize-container-resources/#pod-resize-status).
+
+用`kubectl describe pod [pod-name]` 来查看。每个condition的都有下面的字段的值，用describe pod来查看的时候，只显示 type, status两个最重要的字段，如果要详细的看可以用`kubectl get pod [你的pod名称] -o yaml`
+
+| Field name           | Description                                                  |
+| :------------------- | :----------------------------------------------------------- |
+| `type`               | Name of this Pod condition.                                  |
+| `status`             | Indicates whether that condition is applicable, with possible values "`True`", "`False`", or "`Unknown`". |
+| `lastProbeTime`      | Timestamp of when the Pod condition was last probed.         |
+| `lastTransitionTime` | Timestamp for when the Pod last transitioned from one status to another. |
+| `reason`             | Machine-readable, UpperCamelCase text indicating the reason for the condition's last transition. |
+| `message`            | Human-readable message indicating details about the last status transition. |
+
+###### Pod readiness
+
+Your application can inject extra feedback or signals into PodStatus: *Pod readiness*. To use this, set `readinessGates` in the Pod's `spec` to specify a list of additional conditions that the kubelet evaluates for Pod readiness.
+
+example:
+
+```yaml
+kind: Pod
+...
+spec:
+  readinessGates:
+    - conditionType: "www.example.com/feature-1"
+status:
+  conditions:
+    - type: Ready                              # a built in PodCondition
+      status: "False"
+      lastProbeTime: null
+      lastTransitionTime: 2018-01-01T00:00:00Z
+    - type: "www.example.com/feature-1"        # an extra PodCondition
+      status: "False"
+      lastProbeTime: null
+      lastTransitionTime: 2018-01-01T00:00:00Z
+  containerStatuses:
+    - containerID: docker://abcd...
+      ready: true
+```
+
+一个 Pod 必须同时满足所有 readinessGates 条件 并且 其自身的 readinessProbe 成功，才会被 Kubernetes 最终标记为 Ready 状态，然后 Service 才会将流量转发给它。ready好了没有，可以用这个来查询。 其中的READY 字段
+
+```shell
+leite@leite-company ~> kubectl get pods
+NAME                                      READY   STATUS    RESTARTS   AGE
+springboot3-deployment-559c8cc88b-l6sjg   0/1     Running   0          13s
+springboot3-deployment-559c8cc88b-rr22r   0/1     Running   0          13s
+
+```
+
+##### Container probes
+
+###### Check mechanisms
+
+1. `exec` (执行命令)
+
+- **核心思想**: 在容器内部执行一个你指定的命令。
+
+- **成功标准**: 该命令执行后的退出码（Exit Code）为 `0`。任何非 `0` 的退出码都被认为是失败。
+
+- **适用场景**:
+
+  - 当你的应用程序没有提供 HTTP 健康检查接口时。
+  - 需要检查应用内部的特定状态，例如：检查某个重要文件是否存在 (`cat /tmp/healthy`)，或者运行一个自定义的健康检查脚本 (`/usr/bin/check-health.sh`)。
+  - 非常灵活，可以实现复杂的健康检查逻辑。
+
+  *示例*：
+
+  YAML
+
+  ```yaml
+  livenessProbe:
+    exec:
+      command:
+      - cat
+      - /tmp/healthy
+  ```
+
+2. `httpGet` (HTTP GET 请求)
+
+- **核心思想**: 向容器的 IP 地址、指定端口和路径发送一个 HTTP GET 请求。
+
+- **成功标准**: 收到的 HTTP 响应状态码（Status Code）大于等于 `200` 且小于 `400`（即 `2xx` 或 `3xx` 系列）。
+
+- **适用场景**:
+
+  - **最常用**的方式，几乎所有 Web 应用或提供 HTTP API 的服务都适用。
+  - 通常应用会专门提供一个用于健康检查的端点（endpoint），比如 `/healthz` 或 `/status`。
+
+  *示例*：
+
+  YAML
+
+  ```yaml
+  readinessProbe:
+    httpGet:
+      path: /healthz
+      port: 8080
+  ```
+
+3. `tcpSocket` (TCP 套接字)
+
+- **核心思想**: 尝试与容器的指定端口建立一个 TCP 连接。
+
+- **成功标准**: TCP “三次握手”成功，即端口是开放的。只要能成功建立连接，就被认为是健康的，即使连接立即被关闭。
+
+- **适用场景**:
+
+  - 适用于那些不提供 HTTP 接口，但监听特定 TCP 端口的服务。
+  - 例如：数据库（MySQL 监听 `3306`），缓存服务（Redis 监听 `6379`），或者其他任何基于 TCP 的应用。
+
+  *示例*：
+
+  YAML
+
+  ```yaml
+  livenessProbe:
+    tcpSocket:
+      port: 3306
+  ```
+
+4. `grpc` (gRPC 远程过程调用)
+
+- **核心思想**: 使用 gRPC 协议执行一个远程过程调用。这是比较新且特定的一种方式。
+
+- **成功标准**: 响应的状态是 `SERVING`。这要求你的应用必须实现 [gRPC Health Checking Protocol](https://www.google.com/search?q=https://github.com/grpc/grpc/blob/master/doc/health-checking.md)。
+
+- **适用场景**:
+
+  - 专门用于基于 gRPC 构建的微服务。
+  - 如果你的技术栈广泛使用 gRPC，这是一种比 `httpGet` 更原生、更高效的检查方式。
+
+  *示例*：
+
+  YAML
+
+  ```yaml
+  ports:
+  - name: grpc
+    port: 9000
+  livenessProbe:
+    grpc:
+      port: 9000
+  ```
+
+###### Probe outcome
+
+Each probe has one of three results:
+
+- `Success`
+
+  The container passed the diagnostic.
+
+- `Failure`
+
+  The container failed the diagnostic.
+
+- `Unknown`
+
+  The diagnostic failed (no action should be taken, and the kubelet will make further checks).
+
+###### Types of probe
+
+* **livenessProbe**
+
+* **readinessProbe**
+
+  readiness probe返回Failure并不会导致容器重启
+
+* **startupProbe**
+
+  Startup probes are useful for Pods that have containers that take a long time to come into service. 
+
+  Indicates whether the application within the container is started. All other probes are disabled if a startup probe is provided, until it succeeds
+
+  livenessProbe (存活探针) 和 readinessProbe (就绪探针) 在 startupProbe 首次成功之前，根本不会开始执行。
+
+**为什么需要 `startupProbe`？**
 
 想象一个场景：你有一个复杂的 Java 应用，它启动时需要加载大量数据、预热缓存、建立数据库连接池等，整个过程可能需要2到3分钟。
 
@@ -1065,3 +1270,20 @@ When you use `kubectl` to query a Pod with a container that is `Terminated`, you
   - 一旦 `startupProbe` 探测成功，它就“功成身退”，此后永远不会再执行。
   - 紧接着，`livenessProbe` 和 `readinessProbe` 开始接管，分别负责监控容器在运行期间是否健康以及是否准备好接收流量。
 
+##### Termination of Pods
+
+ If the kubelet or the container runtime's management service is restarted while waiting for processes to terminate, the cluster retries from the start including the full original grace period.
+
+###### Pod Termination Flow
+
+If the `preStop` hook is still running after the grace period expires, the kubelet requests a small, one-off grace period extension of 2 seconds.
+
+###### Forced Pod termination 
+
+By default, all deletes are graceful within 30 seconds. The `kubectl delete` command supports the `--grace-period=<seconds>` option which allows you to override the default and specify your own value.
+
+Using kubectl, You must specify an additional flag `--force` along with `--grace-period=0` in order to perform force deletions.
+
+###### Pod shutdown and sidecar containers 
+
+If your Pod includes one or more [sidecar containers](https://kubernetes.io/docs/concepts/workloads/pods/sidecar-containers/) (init containers with an Always restart policy), the kubelet will delay sending the TERM signal to these sidecar containers until the last main container has fully terminated. 
