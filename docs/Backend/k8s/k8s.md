@@ -1427,3 +1427,35 @@ Sidecar containers run concurrently with the main application container.
 Sidecar containers can interact directly with the main application containers, because like init containers they always share the same network, and can optionally also share volumes (filesystems).
 
 Init containers stop before the main containers start up, so init containers cannot exchange messages with the app container in a Pod. Any data passing is one-way (for example, an init container can put information inside an `emptyDir` volume).
+
+#### Ephemeral Containers
+
+A special type of container that runs temporarily in an existing [Pod](https://kubernetes.io/docs/concepts/workloads/pods/) to accomplish user-initiated actions such as troubleshooting. You use ephemeral containers to inspect services rather than to build applications.
+
+> #### Note:
+>
+> Ephemeral containers are not supported by [static pods](https://kubernetes.io/docs/tasks/configure-pod-container/static-pod/).
+
+Ephemeral containers are created using a special `ephemeralcontainers` handler in the API rather than by adding them directly to `pod.spec`, so it's not possible to add an ephemeral container using `kubectl edit`.
+
+可以使用 `kubectl debug` 命令来附加一个临时容器：
+
+```bash
+# 语法: kubectl debug -it <pod-name> --image=<debug-image> --target=<app-container-name> -- <command>
+
+# 附加一个 busybox 容器，并启动一个交互式的 shell
+kubectl debug -it my-app-pod --image=busybox --target=my-app-container
+
+# 进入 shell 后，你就位于 my-app-pod 的网络环境中了
+# 你可以...
+# 检查网络连接
+/ # ping google.com
+
+# 检查应用容器的端口是否在监听 (假设应用跑在 80 端口)
+/ # wget -qO- localhost:80
+
+# 查看所有进程 (如果开启了进程共享)
+/ # ps aux
+```
+
+当你执行 `kubectl debug` 后，如果你去查看 Pod 的 YAML 定义，你会发现多了一个 `ephemeralContainers` 字段，里面描述了你刚刚添加的 `busybox` 容器。
