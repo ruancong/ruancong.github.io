@@ -1527,7 +1527,7 @@ spec:
 
 ##### Pod disruption conditions
 
-[与 Pod conditions 关联](./Pod conditions)
+[与 Pod conditions 关联](#Pod conditions)
 
 A dedicated Pod `DisruptionTarget` [condition](https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#pod-conditions) is added to indicate that the Pod is about to be deleted due to a [disruption](https://kubernetes.io/docs/concepts/workloads/pods/disruptions/). The `reason` field of the condition additionally indicates one of the following reasons for the Pod termination:
 
@@ -1553,3 +1553,32 @@ A dedicated Pod `DisruptionTarget` [condition](https://kubernetes.io/docs/concep
 
 When using a Job (or CronJob), you may want to use these Pod disruption conditions as part of your Job's [Pod failure policy](https://kubernetes.io/docs/concepts/workloads/controllers/job/#pod-failure-policy).
 
+#### Pod hostname
+
+##### Default Pod hostname
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: busybox-1
+spec:
+  containers:
+  - image: busybox:1.28
+    command:
+      - sleep
+      - "3600"
+    name: busybox
+```
+
+The Pod created by this manifest will have its hostname and fully qualified domain name (FQDN) set to `busybox-1`.
+
+##### Hostname with pod's hostname and subdomain fields
+
+The Pod spec includes an optional `hostname` field. When set, this value takes precedence over the Pod's `metadata.name` as the hostname (observed from within the Pod). 
+
+When both hostname and subdomain are set, the cluster's DNS server will create A and/or AAAA records based on these fields.
+
+##### Hostname with pod's setHostnameAsFQDN fields
+
+When both `setHostnameAsFQDN: true` and the subdomain field is set in the Pod spec, the kubelet writes the Pod's FQDN into the hostname for that Pod's namespace. In this case, both `hostname` and `hostname --fqdn` return the Pod's FQDN.
