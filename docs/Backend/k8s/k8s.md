@@ -1459,3 +1459,97 @@ kubectl debug -it my-app-pod --image=busybox --target=my-app-container
 ```
 
 当你执行 `kubectl debug` 后，如果你去查看 Pod 的 YAML 定义，你会发现多了一个 `ephemeralContainers` 字段，里面描述了你刚刚添加的 `busybox` 容器。
+
+#### Disruptions
+
+This guide is for application owners who want to build highly available applications, and thus need to understand what types of disruptions can happen to Pods.
+
+##### Voluntary and involuntary disruptions
+
+We call these unavoidable cases *involuntary disruptions* to an application. Examples are:
+
+- a hardware failure of the physical machine backing the node
+- cluster administrator deletes VM (instance) by mistake
+- cloud provider or hypervisor failure makes VM disappear
+- a kernel panic
+- the node disappears from the cluster due to cluster network partition
+- eviction of a pod due to the node being [out-of-resources](https://kubernetes.io/docs/concepts/scheduling-eviction/node-pressure-eviction/).
+
+We call other cases *voluntary disruptions*. These include both actions initiated by the application owner and those initiated by a Cluster Administrator. Typical application owner actions include:
+
+- deleting the deployment or other controller that manages the pod
+- updating a deployment's pod template causing a restart
+- directly deleting a pod (e.g. by accident)
+
+Cluster administrator actions include:
+
+- [Draining a node](https://kubernetes.io/docs/tasks/administer-cluster/safely-drain-node/) for repair or upgrade.
+- Draining a node from a cluster to scale the cluster down (learn about [Node Autoscaling](https://kubernetes.io/docs/concepts/cluster-administration/node-autoscaling/)).
+- Removing a pod from a node to permit something else to fit on that node.
+
+##### Dealing with disruptions
+
+Here are some ways to mitigate involuntary disruptions:
+
+- Ensure your pod [requests the resources](https://kubernetes.io/docs/tasks/configure-pod-container/assign-memory-resource/) it needs.
+- Replicate your application if you need higher availability. (Learn about running replicated [stateless](https://kubernetes.io/docs/tasks/run-application/run-stateless-application-deployment/) and [stateful](https://kubernetes.io/docs/tasks/run-application/run-replicated-stateful-application/) applications.)
+- For even higher availability when running replicated applications, spread applications across racks (using [anti-affinity](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity)) or across zones (if using a [multi-zone cluster](https://kubernetes.io/docs/setup/multiple-zones).)
+
+##### Pod disruption budgets
+
+As an application owner, you can create a PodDisruptionBudget (PDB) for each application. A PDB limits the number of Pods of a replicated application that are down simultaneously from voluntary disruptions.
+
+A PDB specifies the number of replicas that an application can tolerate having, relative to how many it is intended to have. For example, a Deployment which has a `.spec.replicas: 5` is supposed to have 5 pods at any given time. If its PDB allows for there to be 4 at a time, then the Eviction API will allow voluntary disruption of one (but not two) pods at a time.
+
+It is recommended to set `AlwaysAllow` [Unhealthy Pod Eviction Policy](https://kubernetes.io/docs/tasks/run-application/configure-pdb/#unhealthy-pod-eviction-policy) to your PodDisruptionBudgets to support eviction of misbehaving applications during a node drain. The default behavior is to wait for the application pods to become [healthy](https://kubernetes.io/docs/tasks/run-application/configure-pdb/#healthiness-of-a-pod) before the drain can proceed.
+
+example:
+
+```yaml
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: my-app-pdb
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: my-app
+  # 关键配置在这里！
+  unhealthyPodEvictionPolicy: AlwaysAllow
+```
+
+| 策略         | `IfHealthyBudget` (默认)                                     | `AlwaysAllow`                                                |
+| ------------ | ------------------------------------------------------------ | ------------------------------------------------------------ |
+| **优点**     | 对应用更“安全”，尽最大努力保证健康实例的数量。               | **优先保障集群运维**，不会因为单个应用的故障而阻塞节点维护、升级等重要操作。 |
+| **缺点**     | **可能阻塞节点排空**，导致集群运维工作无法进行。             | 如果应用的大多数实例都不健康，`drain` 操作可能会驱逐掉最后几个健康的实例，可能导致服务短暂中断。 |
+| **适用场景** | 极少数情况下，如果应用的健康比集群的可维护性更重要，且应用本身非常稳定。 | **绝大多数场景的推荐做法**。它遵循一个重要的运维理念：应用的故障应该由应用自身解决（例如通过控制器重建），而不应该影响到整个基础设施的管理。 |
+
+##### Pod disruption conditions
+
+[与 Pod conditions 关联](./Pod conditions)
+
+A dedicated Pod `DisruptionTarget` [condition](https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#pod-conditions) is added to indicate that the Pod is about to be deleted due to a [disruption](https://kubernetes.io/docs/concepts/workloads/pods/disruptions/). The `reason` field of the condition additionally indicates one of the following reasons for the Pod termination:
+
+- `PreemptionByScheduler`
+
+  Pod is due to be [preempted](https://kubernetes.io/docs/concepts/scheduling-eviction/pod-priority-preemption/#preemption) by a scheduler in order to accommodate a new Pod with a higher priority. For more information, see [Pod priority preemption](https://kubernetes.io/docs/concepts/scheduling-eviction/pod-priority-preemption/).
+
+- `DeletionByTaintManager`
+
+  Pod is due to be deleted by Taint Manager (which is part of the node lifecycle controller within `kube-controller-manager`) due to a `NoExecute` taint that the Pod does not tolerate; see [taint](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/)-based evictions.
+
+- `EvictionByEvictionAPI`
+
+  Pod has been marked for [eviction using the Kubernetes API](https://kubernetes.io/docs/concepts/scheduling-eviction/api-eviction/) .
+
+- `DeletionByPodGC`
+
+  Pod, that is bound to a no longer existing Node, is due to be deleted by [Pod garbage collection](https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#pod-garbage-collection).
+
+- `TerminationByKubelet`
+
+  Pod has been terminated by the kubelet, because of either [node pressure eviction](https://kubernetes.io/docs/concepts/scheduling-eviction/node-pressure-eviction/), the [graceful node shutdown](https://kubernetes.io/docs/concepts/architecture/nodes/#graceful-node-shutdown), or preemption for [system critical pods](https://kubernetes.io/docs/tasks/administer-cluster/guaranteed-scheduling-critical-addon-pods/)
+
+When using a Job (or CronJob), you may want to use these Pod disruption conditions as part of your Job's [Pod failure policy](https://kubernetes.io/docs/concepts/workloads/controllers/job/#pod-failure-policy).
+
