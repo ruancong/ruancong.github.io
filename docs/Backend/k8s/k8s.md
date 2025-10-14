@@ -65,7 +65,7 @@ The components of a Kubernetes cluster:
 
 * 怎么知道我的pod有没有启动成功？
 
-  > 1. 宏观检查：`kubectl get pods`
+  > 1. 宏观检查：`kubectl get pods` 还可以增加`--watch` 还实时观察
   > 2. 详细诊断：`kubectl describe pod [pod-name]`
   > 3. 深入应用内部：`kubectl logs [pod-name]` 【可以用--previous选择来查看上一次的日志，还可以用-f】
 
@@ -701,6 +701,23 @@ Kubernetes objects are persistent entities in the Kubernetes system. Kubernetes 
 
 * 使用 kubectl explain 命令：这是一个非常有用的命令，可以帮助你了解任何 Kubernetes 资源的结构和字段。例如，如果你想知道 Deployment 的 apiVersion
 
+  > 如 
+  >
+  > ```shell
+  > kubectl explain Deployment
+  > # GROUP:      apps
+  > # KIND:       Deployment
+  > # VERSION:    v1
+  > 
+  > ```
+  >
+  > 所以定义Deployment时为：
+  >
+  > ```
+  > apiVersion: apps/v1
+  > kind: Deployment
+  > ```
+
 * 一个完整的应用[系统]，一般只有一个type为loadbalancer的service?
 
   > * 对于一个完整的、现代化的应用系统（特别是基于微服务架构的 Web 应用），通常最佳实践就是只使用一个 Type=LoadBalancer 的 Service。标准的应用暴露架构：“LoadBalancer + Ingress Controller”
@@ -827,7 +844,7 @@ Pods are generally not created directly and are created using workload resources
 
 Pods are designed as relatively ephemeral, disposable entities. The Pod remains on that node until the Pod finishes execution, the Pod object is deleted, the Pod is *evicted* for lack of resources, or the node fails.
 
-> #### Note:
+> Note:
 >
 > Restarting a container in a Pod should not be confused with restarting a Pod. A Pod is not a process, but an environment for running container(s). A Pod persists until it is deleted.
 
@@ -1582,3 +1599,46 @@ When both hostname and subdomain are set, the cluster's DNS server will create A
 ##### Hostname with pod's setHostnameAsFQDN fields
 
 When both `setHostnameAsFQDN: true` and the subdomain field is set in the Pod spec, the kubelet writes the Pod's FQDN into the hostname for that Pod's namespace. In this case, both `hostname` and `hostname --fqdn` return the Pod's FQDN.
+
+> Note:
+> In Linux, the hostname field of the kernel (the nodename field of struct utsname) is limited to 64 characters.
+>
+> If a Pod enables this feature and its FQDN is longer than 64 character, it will fail to start. The Pod will remain in Pending status (ContainerCreating as seen by kubectl) generating error events, such as "Failed to construct FQDN from Pod hostname and cluster domain".
+>
+> This means that when using this field, you must ensure the combined length of the Pod's metadata.name (or spec.hostname) and spec.subdomain fields results in an FQDN that does not exceed 64 characters.
+
+#### Pod QoS classes
+
+##### Quality of Service classes
+
+ Kubernetes assigns every Pod a QoS class based on the resource requests and limits of its component Containers. QoS classes are used by Kubernetes to decide which Pods to evict from a Node experiencing [Node Pressure](https://kubernetes.io/docs/concepts/scheduling-eviction/node-pressure-eviction/). The possible QoS classes are `Guaranteed`, `Burstable`, and `BestEffort`. When a Node runs out of resources, Kubernetes will first evict `BestEffort` Pods running on that Node, followed by `Burstable` and finally `Guaranteed` Pods. 
+
+1. **`Guaranteed` (最高优先级)**
+   - **条件**: Pod 中的**每一个**容器都必须同时设置了 CPU 和内存的 `requests` 和 `limits`，并且对于每一种资源，`requests` 的值必须**严格等于** `limits` 的值。
+   - **特点**: 这些 Pod 的资源需求是完全可预测的。只要不超过 `limits`，它们就能获得所请求的资源。在节点资源紧张时，这类 Pod 最后才会被驱逐。
+2. **`BestEffort` (最低优先级)**
+   - **条件**: Pod 中的任何一个容器都没有设置任何 `requests` 或 `limits`。
+   - **特点**: 这些 Pod 没有任何资源保障，它们会使用节点上一切可用的空闲资源。当节点资源紧张时，这类 Pod 是**最先被驱逐**的。
+3. **`Burstable` (中等优先级)**
+   - **条件**: Pod 不满足 `Guaranteed` 和 `BestEffort` 的任何一个条件。换句话说，只要 Pod 中至少有一个容器设置了 `requests`，但又不完全满足 `Guaranteed` 的严格要求，它就是 `Burstable`。
+   - **特点**: 这类 Pod 获得了一定程度的资源保障（由 `requests` 保证），同时允许在节点资源有富余时，使用超过其 `requests` 的资源，最多不能超过其 `limits`（如果设置了的话）。在资源紧张时，它们的驱逐优先级介于 `Guaranteed` 和 `BestEffort` 之间。
+
+##### Some behavior is independent of QoS class
+
+For example:
+
+- Any Container exceeding a resource limit will be killed and restarted by the kubelet without affecting other Containers in that Pod.
+- If a Container exceeds its resource request and the node it runs on faces resource pressure, the Pod it is in becomes a candidate for [eviction](https://kubernetes.io/docs/concepts/scheduling-eviction/node-pressure-eviction/). If this occurs, all Containers in the Pod will be terminated. Kubernetes may create a replacement Pod, usually on a different node.
+- The resource request of a Pod is equal to the sum of the resource requests of its component Containers, and the resource limit of a Pod is equal to the sum of the resource limits of its component Containers.
+- The kube-scheduler does not consider QoS class when selecting which Pods to [preempt](https://kubernetes.io/docs/concepts/scheduling-eviction/pod-priority-preemption/#preemption). Preemption can occur when a cluster does not have enough resources to run all the Pods you defined.
+
+#### Downward API
+
+There are two ways to expose Pod and container fields to a running container: environment variables, and as files that are populated by a special volume type. Together, these two ways of exposing Pod and container fields are called the downward API.
+
+##### Available fields
+
+You can pass information from available Pod-level fields using `fieldRef`. [fieldRef](https://kubernetes.io/docs/concepts/workloads/pods/downward-api/#downwardapi-fieldRef)
+
+You can pass information from available Container-level fields using `resourceFieldRef`.
+
