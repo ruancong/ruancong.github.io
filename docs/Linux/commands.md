@@ -419,6 +419,20 @@ yum search java | grep openjdk
   dpkg -S /usr/bin/java
   ```
 
+* 删除
+
+  ```shell
+  sudo dpkg -r cursor
+  ```
+
+* 彻底清除（包括配置文件）
+
+  ```shell
+  sudo dpkg -P cursor
+  ```
+
+  
+
 ### alias
 
 查看命令别名
