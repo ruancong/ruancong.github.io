@@ -152,17 +152,27 @@ The components of a Kubernetes cluster:
 
 * Deployment：负责管理和维护你的应用实例（Pod）。它会确保指定数量的 Nginx Pod 正在运行。如果某个 Pod 挂掉了，Deployment
   会自动创建一个新的来替代它
+  
 * 在 Deployment（以及 ReplicaSet, StatefulSet, Job, CronJob 等这类控制器）的 Pod 模板（spec.template）中，metadata.name 这个字段是不能设置的。如果你尝试设置它，Kubernetes API Server 会拒绝你的请求。
+
 * Deployment 要能够正常工作（特别是运行多个副本、进行滚动更新和自我修复），其底层的 Pod 必须通过类似 `generateName` 的机制来创建，以保证每个 Pod 名称的唯一性
+
 * The server may generate a name when generateName is provided instead of name in a resource create request. When generateName is used, the provided value is used as a name prefix, which server appends a generated suffix to.
 
   > Kubernetes v1.31以后会重试8次以使生成唯一的名字
+  
 * 在 Deployment（以及 ReplicaSet, StatefulSet, Job, CronJob 等这类控制器）的 Pod 模板（`spec.template`）中，`metadata.name` 这个字段是**不能设置**的。如果你尝试设置它，Kubernetes API Server 会拒绝你的请求。
 
 * 一个 Deployment 实际上并不直接管理 Pod，它的工作流程是这样的：
 
   1. **Deployment**: 你创建了一个 Deployment 资源，它的名称是固定的（比如 `nginx-deployment`）。这个 Deployment 负责管理“版本”。
+  
   2. **ReplicaSet**: Deployment 会根据自己的 Pod 模板，创建一个 **ReplicaSet** 资源。这个 ReplicaSet 的名称是**动态生成的**，通常是 `[Deployment名称]-[Pod模板的哈希值]`，例如 `nginx-deployment-66b6c48dd5`。这个哈希值确保了每次你更新 Deployment 的 Pod 模板时（比如更换镜像版本），都会创建一个全新的、不同名称的 ReplicaSet。
+  
+     > kubectl get rs
+     >
+     > kubectl get replicateSet 
+  
   3. **Pod**: ReplicaSet 的任务很简单，就是确保有指定数量的、符合其模板的 Pod 正在运行。它会根据自己的名称作为**前缀**，去创建 Pod。所以，最终 Pod 的名称也是**动态生成的**，格式通常是 `[ReplicaSet名称]-[随机后缀]`，例如 `nginx-deployment-66b6c48dd5-x7p9m`。
 
 ## Servcie
@@ -1642,3 +1652,82 @@ You can pass information from available Pod-level fields using `fieldRef`. [fiel
 
 You can pass information from available Container-level fields using `resourceFieldRef`.
 
+### Workload management
+
+#### Deployments
+
+##### Creating a Deployment
+
+* Do not manage ReplicaSets owned by a Deployment.
+
+* Do not overlap labels or selectors with other controllers (including other Deployments and StatefulSets).
+
+  > 不要让不同的控制器[[实例]（Controller）使用可以匹配到同一批 Pod 的选择器（Selector）
+
+* The `pod-template-hash` label is added by the Deployment controller to every ReplicaSet that a Deployment creates or adopts.
+
+##### Updating a Deployment
+
+If the Deployment is updated, the existing ReplicaSet that controls Pods whose labels match `.spec.selector` but whose template does not match `.spec.template` is scaled down.
+
+> ReplicaSet去控制 selector没有变的; .spec.template变化了
+
+###### Label selector updates 
+
+- Selector additions require the Pod template labels in the Deployment spec to be updated with the new label too, otherwise a validation error is returned. This change is a non-overlapping one, meaning that the new selector does not select ReplicaSets and Pods created with the old selector, resulting in orphaning all old ReplicaSets and creating a new ReplicaSet.
+
+  > 如果selctor增加了新的label, 对应的`spec.template.metadata.labels`也要加上这个新的label.  更新后旧的ReplicaSets并不会自动被清除
+
+- Selector updates changes the existing value in a selector key -- result in the same behavior as additions.
+
+- Selector removals removes an existing key from the Deployment selector -- do not require any changes in the Pod template labels. Existing ReplicaSets are not orphaned, and a new ReplicaSet is not created, but note that the removed label still exists in any existing Pods and ReplicaSets.
+
+##### Rolling Back a Deployment
+
+when you roll back to an earlier revision, only the Deployment's Pod template part is rolled back.
+
+> 不会改变的: 你手动设置的副本数 replicas: 5 不会回滚到初始的 3。因为 replicas 字段不属于 .spec.template (Pod 模板) 的一部分。它属于 Deployment 的控制器策略。
+
+###### Checking Rollout History of a Deployment
+
+check the revisions of this Deployment:
+
+```shell
+kubectl rollout history deployment/nginx-deployment
+```
+
+To see the details of each revision, run:
+
+```shell
+kubectl rollout history deployment/nginx-deployment --revision=2
+```
+
+###### Rolling Back to a Previous Revision
+
+decided to undo the current rollout and rollback to the previous revision:
+
+```shell
+kubectl rollout undo deployment/nginx-deployment
+```
+
+ you can rollback to a specific revision by specifying it with `--to-revision`:
+
+```shell
+kubectl rollout undo deployment/nginx-deployment --to-revision=2
+```
+
+##### Scaling a Deployment
+
+###### Proportional scaling
+
+比例扩容是指，当一个正在进行版本更新的 Deployment 需要扩容时，Kubernetes 不会把所有的新增 Pod 都创建成新版本，而是会按照当前新旧版本的 Pod 数量比例，来分配这些新增的 Pod。 按比例新增完以后，再升级到新的版本
+
+- 只有在滚动更新的特定窗口期内，比例扩容机制才会被激活和使用
+
+##### Pausing and Resuming a rollout of a Deployment
+
+当一个 Deployment 的发布（rollout）被暂停（paused）后，你对其模板（template）所做的任何后续更改，例如使用 kubectl set image 更新镜像，都仅仅是更新了 Deployment 这个对象在 Kubernetes API Server 中的定义（Spec）。然而，Deployment Controller（控制器）因为收到了“暂停”指令，所以它不会触发任何实际的滚动更新操作。也就是说，它不会去创建新的 ReplicaSet，也不会用新镜像去创建新的 Pod。
+
+只有当你执行 kubectl rollout resume 命令后，Deployment Controller 才会解除暂停状态，然后它会去比较当前的活动状态和你在暂停期间所做的全部修改后的期望状态（Desired State）
+
+- 这种“暂停-修改-恢复”的机制非常有用，它为我们提供了一个窗口期，让我们可以在一个发布周期内安全地应用多个变更，而不是每做一个小改动就触发一次滚动更新。
