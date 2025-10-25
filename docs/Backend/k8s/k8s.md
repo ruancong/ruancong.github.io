@@ -1731,3 +1731,222 @@ kubectl rollout undo deployment/nginx-deployment --to-revision=2
 只有当你执行 kubectl rollout resume 命令后，Deployment Controller 才会解除暂停状态，然后它会去比较当前的活动状态和你在暂停期间所做的全部修改后的期望状态（Desired State）
 
 - 这种“暂停-修改-恢复”的机制非常有用，它为我们提供了一个窗口期，让我们可以在一个发布周期内安全地应用多个变更，而不是每做一个小改动就触发一次滚动更新。
+
+#### StatefulSets
+
+##### Using StatefulSets
+
+StatefulSets are valuable for applications that require one or more of the following.
+
+- Stable, unique network identifiers.
+- Stable, persistent storage.
+- Ordered, graceful deployment and scaling.
+- Ordered, automated rolling updates.
+
+In the above, stable is synonymous with persistence across Pod (re)scheduling. 
+
+##### Limitations
+
+* Deleting and/or scaling a StatefulSet down will *not* delete the volumes associated with the StatefulSet. 
+
+* StatefulSets currently require a [Headless Service](https://kubernetes.io/docs/concepts/services-networking/service/#headless-services) to be responsible for the network identity of the Pods. You are responsible for creating this Service.
+
+* StatefulSets do not provide any guarantees on the termination of pods when a StatefulSet is deleted. To achieve ordered and graceful termination of the pods in the StatefulSet, it is possible to scale the StatefulSet down to 0 prior to deletion.
+
+  > Kubernetes 会立即开始清理其所属的 Pods，但这个过程不保证顺序，也不保证 Pods 能优雅地关闭
+
+* StatefulSets do not provide any guarantees on the termination of pods when a StatefulSet is deleted. To achieve ordered and graceful termination of the pods in the StatefulSet, it is possible to scale the StatefulSet down to 0 prior to deletion.
+
+##### Example
+
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx
+  labels:
+    app: nginx
+spec:
+  ports:
+  - port: 80
+    name: web
+  clusterIP: None
+  selector:
+    app: nginx
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: web
+spec:
+  selector:
+    matchLabels:
+      app: nginx # has to match .spec.template.metadata.labels
+  serviceName: "nginx"
+  replicas: 3 # by default is 1
+  minReadySeconds: 10 # by default is 0
+  template:
+    metadata:
+      labels:
+        app: nginx # has to match .spec.selector.matchLabels
+    spec:
+      terminationGracePeriodSeconds: 10
+      containers:
+      - name: nginx
+        image: registry.k8s.io/nginx-slim:0.24
+        ports:
+        - containerPort: 80
+          name: web
+        volumeMounts:
+        - name: www
+          mountPath: /usr/share/nginx/html
+  volumeClaimTemplates:
+  - metadata:
+      name: www
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      storageClassName: "my-storage-class"
+      resources:
+        requests:
+          storage: 1Gi
+```
+
+##### Pod Identity
+
+StatefulSet Pods have a unique identity that consists of an ordinal, a stable network identity, and stable storage. The identity sticks to the Pod, regardless of which node it's (re)scheduled on.
+
+###### Ordinal Index
+
+For a StatefulSet with N [replicas](https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/#replicas), each Pod in the StatefulSet will be assigned an integer ordinal, that is unique over the Set. By default, pods will be assigned ordinals from 0 up through N-1. The StatefulSet controller will also add a pod label with this index: `apps.kubernetes.io/pod-index`.
+
+###### Start ordinal
+
+- `.spec.ordinals.start`: If the `.spec.ordinals.start` field is set, Pods will be assigned ordinals from `.spec.ordinals.start` up through `.spec.ordinals.start + .spec.replicas - 1`.
+
+###### Stable Network ID
+
+how that affects the DNS names for the StatefulSet's Pods.
+
+| Cluster Domain | Service (ns/name) | StatefulSet (ns/name) | StatefulSet Domain              | Pod DNS                                      | Pod Hostname |
+| -------------- | ----------------- | --------------------- | ------------------------------- | -------------------------------------------- | ------------ |
+| cluster.local  | default/nginx     | default/web           | nginx.default.svc.cluster.local | web-{0..N-1}.nginx.default.svc.cluster.local | web-{0..N-1} |
+| cluster.local  | foo/nginx         | foo/web               | nginx.foo.svc.cluster.local     | web-{0..N-1}.nginx.foo.svc.cluster.local     | web-{0..N-1} |
+| kube.local     | foo/nginx         | foo/web               | nginx.foo.svc.kube.local        | web-{0..N-1}.nginx.foo.svc.kube.local        | web-{0..N-1} |
+
+###### Stable Storage
+
+Pod 的调度位置不会影响 StatefulSet 创建的 PV 数量。只要 replicas: 3 并且定义了 volumeClaimTemplates，就一定会创建 3 个 PVC，进而触发创建 3 个 PV，无论这些 Pod 最终在哪里运行。
+
+ Note that, the PersistentVolumes associated with the Pods' PersistentVolume Claims are not deleted when the Pods, or StatefulSet are deleted. This must be done manually.
+
+###### Pod Name Label
+
+When the StatefulSet [controller](https://kubernetes.io/docs/concepts/architecture/controller/) creates a Pod, it adds a label, `statefulset.kubernetes.io/pod-name`, that is set to the name of the Pod. This label allows you to attach a Service to a specific Pod in the StatefulSet.
+
+##### Deployment and Scaling Guarantees
+
+- For a StatefulSet with N replicas, when Pods are being deployed, they are created sequentially, in order from {0..N-1}.
+- When Pods are being deleted, they are terminated in reverse order, from {N-1..0}.
+- Before a scaling operation is applied to a Pod, all of its predecessors must be Running and Ready.
+- Before a Pod is terminated, all of its successors must be completely shutdown.
+
+The StatefulSet should not specify a `pod.Spec.TerminationGracePeriodSeconds` of 0. 
+
+##### Pod Management Policies
+
+via its `.spec.podManagementPolicy` field. 
+
+* `OrderedReady` pod management is the default for StatefulSets.
+* `Parallel` pod management tells the StatefulSet controller to launch or terminate all Pods in parallel
+
+##### Update strategies
+
+There are two possible values for a StatefulSet's `.spec.updateStrategy` field.
+
+- `OnDelete`
+
+  When a StatefulSet's `.spec.updateStrategy.type` is set to `OnDelete`, the StatefulSet controller will not automatically update the Pods in a StatefulSet. Users must manually delete Pods to cause the controller to create new Pods that reflect modifications made to a StatefulSet's `.spec.template`.
+
+- `RollingUpdate`
+
+  The `RollingUpdate` update strategy implements automated, rolling updates for the Pods in a StatefulSet. This is the default update strategy.
+
+##### Rolling Updates
+
+When a StatefulSet's `.spec.updateStrategy.type` is set to `RollingUpdate`, the StatefulSet controller will delete and recreate each Pod in the StatefulSet. It will proceed in the same order as Pod termination (from the largest ordinal to the smallest), updating each Pod one at a time.
+
+###### Partitioned rolling updates
+
+The `RollingUpdate` update strategy can be partitioned, by specifying a `.spec.updateStrategy.rollingUpdate.partition`.
+
+`partition`（分区）是Kubernetes StatefulSet中`RollingUpdate`（滚动更新）策略的一个核心属性。它允许你对有状态应用（如数据库）进行**部分更新**或**阶段性发布**。
+
+它的工作原理是充当一个“分界线”，将所有Pod副本根据其序号（ordinal，即`pod-0`, `pod-1`...）分为两个集合：
+
+1. **“更新区” (Update Zone):**
+   - **规则：** 序号 **大于或等于 ** `partition` 值的Pod。
+   - **行为：** 当你更新StatefulSet的Pod模板（`.spec.template`，例如更换镜像）时，这个区域的Pod**会被**自动滚动更新到新版本。
+2. **“锁定区” (Locked Zone):**
+   - **规则：** 序号 **小于** `partition` 值的Pod。
+   - **行为：** 这个区域的Pod**不会**被更新，它们会被“锁定”在当前（旧的）版本。
+   - **关键保护机制：** 即使你手动删除一个“锁定区”的Pod，Kubernetes也会**使用旧版本的模板**来重建它，以防止意外升级。
+
+##### Revision history
+
+Control retained revisions with `.spec.revisionHistoryLimit`:
+
+```yaml
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: webapp
+spec:
+  revisionHistoryLimit: 5  # Keep last 5 revisions
+```
+
+You can revert to a previous configuration using:
+
+```shell
+# View revision history
+kubectl rollout history statefulset/webapp
+
+# Rollback to a specific revision
+kubectl rollout undo statefulset/webapp --to-revision=3
+```
+
+To view associated ControllerRevisions:
+
+```shell
+# List all revisions for the StatefulSet
+kubectl get controllerrevisions -l app.kubernetes.io/name=webapp
+
+# View detailed configuration of a specific revision
+kubectl get controllerrevision/webapp-3 -o yaml
+```
+
+##### PersistentVolumeClaim retention
+
+The optional `.spec.persistentVolumeClaimRetentionPolicy` field controls if and how PVCs are deleted during the lifecycle of a StatefulSet.
+
+这个策略下有两个子策略，它们控制着不同场景下的 PVC 行为：
+
+1. **`whenDeleted`**
+   - **触发时机：** 当整个 StatefulSet 资源**被删除**时（例如，你执行了 `kubectl delete statefulset my-app`）。
+   - **控制对象：** *所有*由这个 StatefulSet 创建的 PVC。
+2. **`whenScaled`**
+   - **触发时机：** 当 StatefulSet 的副本数（`replicas`）**被调小**时（即“缩容”，例如从 5 个副本缩减到 3 个副本）。
+   - **控制对象：** *仅仅*那些因缩容而被删除的 Pod 所对应的 PVC（在上面的例子中，就是 `my-app-4` 和 `my-app-3` 对应的 PVC）。
+
+ 策略的两个选项 对于上述的每一种场景，你都有两种行为选项：
+
+1. **`Retain` (默认值)**
+   - **含义：** 保留。
+   - **行为：** 这就是 Kubernetes 的经典行为。即使 Pod 被删除，PVC 也会被保留在集群中。
+   - **适用场景：** 生产环境的数据库、关键数据存储。**数据的安全性是第一位的。**
+2. **`Delete`**
+   - **含义：** 删除。
+   - **行为：** 当关联的 Pod 被终止*之后*，Kubernetes 会自动删除该 PVC。
+   - **适用场景：**
+     - 开发/测试环境：快速清理资源，避免垃圾堆积。
+     - 数据可再生应用：例如一个分布式缓存集群，缓存数据丢失后可以重新生成。
+     - 临时数据处理：Pod 只是用 PVC 做临时落地，Pod 没了数据也就不需要了。
