@@ -1950,3 +1950,124 @@ The optional `.spec.persistentVolumeClaimRetentionPolicy` field controls if and 
      - 开发/测试环境：快速清理资源，避免垃圾堆积。
      - 数据可再生应用：例如一个分布式缓存集群，缓存数据丢失后可以重新生成。
      - 临时数据处理：Pod 只是用 PVC 做临时落地，Pod 没了数据也就不需要了。
+
+#### DaemonSet
+
+##### Writing a DaemonSet Spec
+
+###### Create a DaemonSet
+
+```yaml
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: fluentd-elasticsearch
+  namespace: kube-system
+  labels:
+    k8s-app: fluentd-logging
+spec:
+  selector:
+    matchLabels:
+      name: fluentd-elasticsearch
+  template:
+    metadata:
+      labels:
+        name: fluentd-elasticsearch
+    spec:
+      tolerations:
+      # these tolerations are to have the daemonset runnable on control plane nodes
+      # remove them if your control plane nodes should not run pods
+      - key: node-role.kubernetes.io/control-plane
+        operator: Exists
+        effect: NoSchedule
+      - key: node-role.kubernetes.io/master
+        operator: Exists
+        effect: NoSchedule
+      containers:
+      - name: fluentd-elasticsearch
+        image: quay.io/fluentd_elasticsearch/fluentd:v5.0.1
+        resources:
+          limits:
+            memory: 200Mi
+          requests:
+            cpu: 100m
+            memory: 200Mi
+        volumeMounts:
+        - name: varlog
+          mountPath: /var/log
+      # it may be desirable to set a high priority class to ensure that a DaemonSet Pod
+      # preempts running Pods
+      # priorityClassName: important
+      terminationGracePeriodSeconds: 30
+      volumes:
+      - name: varlog
+        hostPath:
+          path: /var/log
+
+```
+
+###### Running Pods on select Nodes
+
+if you specify a `.spec.template.spec.affinity`, then DaemonSet controller will create Pods on nodes which match that [node affinity](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/). If you do not specify either, then the DaemonSet controller will create Pods on all nodes.
+
+##### How Daemon Pods are scheduled
+
+A DaemonSet can be used to ensure that all eligible nodes run a copy of a Pod. The DaemonSet controller creates a Pod for each eligible node and adds the `spec.affinity.nodeAffinity` field of the Pod to match the target host. After the Pod is created, the default scheduler typically takes over and then binds the Pod to the target host by setting the `.spec.nodeName` field. If the new Pod cannot fit on the node, the default scheduler may preempt (evict) some of the existing Pods based on the [priority](https://kubernetes.io/docs/concepts/scheduling-eviction/pod-priority-preemption/#pod-priority) of the new Pod.
+
+> 抢占行为完全是基于优先级 (Priority) 的，而优先级是通过 PriorityClass 来定义的
+
+###### Taints and tolerations
+
+The DaemonSet controller automatically adds a set of [tolerations](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/) to DaemonSet Pods:
+
+| Toleration key                                               | Effect       | Details                                                      |
+| ------------------------------------------------------------ | ------------ | ------------------------------------------------------------ |
+| [`node.kubernetes.io/not-ready`](https://kubernetes.io/docs/reference/labels-annotations-taints/#node-kubernetes-io-not-ready) | `NoExecute`  | DaemonSet Pods can be scheduled onto nodes that are not healthy or ready to accept Pods. Any DaemonSet Pods running on such nodes will not be evicted. |
+| [`node.kubernetes.io/unreachable`](https://kubernetes.io/docs/reference/labels-annotations-taints/#node-kubernetes-io-unreachable) | `NoExecute`  | DaemonSet Pods can be scheduled onto nodes that are unreachable from the node controller. Any DaemonSet Pods running on such nodes will not be evicted. |
+| [`node.kubernetes.io/disk-pressure`](https://kubernetes.io/docs/reference/labels-annotations-taints/#node-kubernetes-io-disk-pressure) | `NoSchedule` | DaemonSet Pods can be scheduled onto nodes with disk pressure issues. |
+| [`node.kubernetes.io/memory-pressure`](https://kubernetes.io/docs/reference/labels-annotations-taints/#node-kubernetes-io-memory-pressure) | `NoSchedule` | DaemonSet Pods can be scheduled onto nodes with memory pressure issues. |
+| [`node.kubernetes.io/pid-pressure`](https://kubernetes.io/docs/reference/labels-annotations-taints/#node-kubernetes-io-pid-pressure) | `NoSchedule` | DaemonSet Pods can be scheduled onto nodes with process pressure issues. |
+| [`node.kubernetes.io/unschedulable`](https://kubernetes.io/docs/reference/labels-annotations-taints/#node-kubernetes-io-unschedulable) | `NoSchedule` | DaemonSet Pods can be scheduled onto nodes that are unschedulable. |
+| [`node.kubernetes.io/network-unavailable`](https://kubernetes.io/docs/reference/labels-annotations-taints/#node-kubernetes-io-network-unavailable) | `NoSchedule` | **Only added for DaemonSet Pods that request host networking**, i.e., Pods having `spec.hostNetwork: true`. Such DaemonSet Pods can be scheduled onto nodes with unavailable network. |
+
+You can add your own tolerations to the Pods of a DaemonSet as well, by defining these in the Pod template of the DaemonSet.
+
+> 📝 Taint Effect: `NoExecute` 核心笔记
+>
+> `NoExecute` 是 Taint（污点）三种效果中最“强力”的一种，它的核心是**驱逐（Eviction）**。
+>
+> 1. 核心功能：驱逐正在运行的 Pod
+>
+> - **触发条件**：当一个 Node 被添加 `effect: NoExecute` 的 Taint。
+> - **立即执行**：K8s 会**立即**检查该 Node 上所有正在运行的 Pod。
+> - **驱逐对象**：所有**没有**匹配此 Taint 的 `toleration`（容忍）的 Pod，都会**立刻**被启动驱逐流程。
+> - **新 Pod 调度**：`NoExecute` 效果也包含了 `NoSchedule` 的功能，即新的 Pod 也无法调度到这个 Node 上（除非它们有匹配的 Toleration）。
+>
+> 2. 驱逐过程：优雅终止 (Graceful)
+>
+> 驱逐并非瞬时的强制杀死（`kill -9`）：
+>
+> - Pod 状态变为 `Terminating`。
+> - Kubelet 开始执行 Pod 的**终止宽限期**（`terminationGracePeriodSeconds`，默认 30s）。
+> - Pod 进程收到 `SIGTERM` 信号，有机会“优雅地”关闭。
+> - 宽限期结束后，如果 Pod 仍未退出，才会被 `SIGKILL` 强制终止。
+> - 与此同时，Deployment 等控制器会在其他可用节点上创建新的替代 Pod。
+>
+> 3. 关键配置：`tolerationSeconds`
+>
+> `tolerationSeconds` 是 `NoExecute` 容忍中一个**极其重要**的可选配置。
+>
+> - **目的**：允许 Pod "临时容忍"一个 `NoExecute` Taint 一段时间，而不是立即被驱逐。
+> - **工作方式**：
+>   - Pod 必须**有**匹配的 `toleration` 才能使用此配置。
+>   - 当 Node 出现 `NoExecute` Taint 时（例如 `node.kubernetes.io/unreachable`），计时开始。
+>   - Pod 会继续运行 `tolerationSeconds` 所指定的秒数。
+>   - **Taint 消失**：如果 Taint 在倒计时结束前被移除（如 Node 恢复），Pod 会继续正常运行，不会被驱逐。
+>   - **Taint 持续**：如果倒计时结束，Taint 仍然存在，Pod 将被启动驱逐流程。
+> - **典型用例**：常用于 `StatefulSet`，防止因短暂的网络分区（Node 暂时 `NotReady`）导致 Pod 被立即驱逐，从而避免有状态应用的数据和服务中断。
+
+##### Updating a DaemonSet
+
+If node labels are changed, the DaemonSet will promptly add Pods to newly matching nodes and delete Pods from newly not-matching nodes.
+
+You can delete a DaemonSet. If you specify `--cascade=orphan` with `kubectl`, then the Pods will be left on the nodes. If you subsequently create a new DaemonSet with the same selector, the new DaemonSet adopts the existing Pods. 
