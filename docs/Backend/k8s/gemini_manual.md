@@ -59,3 +59,24 @@ gemini --checkpointing
 /chat resume [chat_name]
 ```
 
+## 默认允许命令行工具运行
+
+在配置文件内`~/.gemini/settings.json`增加配置
+
+```json
+{
+  "tools": {
+    "allowed": [
+      "ShellTool(ls)",
+      "ShellTool(find)",
+      "ShellTool(cat)",
+      "ShellTool(cd)",
+      "ShellTool(npm run test)",
+      "ShellTool(git diff)",
+      "ShellTool(git status)",
+      "ShellTool(git log)",
+      "ShellTool(gh pr view)"
+    ]
+  }
+}
+```
