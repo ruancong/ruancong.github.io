@@ -13,16 +13,16 @@
   "devDependencies": {
     "@iconify-json/material-symbols": "^1.2.12",
     "@iconify-json/si": "^1.2.3",
-    "@unocss/preset-attributify": "^0.58.5",
-    "@unocss/preset-icons": "^0.58.5",
-    "@unocss/preset-uno": "^0.58.5",
-    "@unocss/vite": "^0.58.5",
+    "@unocss/preset-attributify": "^66.5.9",
+    "@unocss/preset-icons": "^66.5.9",
+    "@unocss/preset-uno": "^66.5.9",
+    "@unocss/vite": "^66.5.9",
     "@vuepress/bundler-vite": "^2.0.0-rc.17",
     "@vuepress/plugin-register-components": "^2.0.0-rc.66",
     "@vuepress/theme-default": "^2.0.0-rc.52",
     "sass-embedded": "^1.79.4",
-    "unocss": "^0.58.5",
-    "vue": "^3.4.0",         
-    "vuepress": "^2.0.0-rc.17"
+    "unocss": "^66.5.9",
+    "vue": "^3.4.0",
+    "vuepress": "^2.0.0-rc.26"
   }
 }
