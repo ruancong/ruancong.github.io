@@ -641,6 +641,118 @@ Kubernetes objects are persistent entities in the Kubernetes system. Kubernetes 
   > 2. `ReplicaSet` **和** `Pod` **完好无损**：你会惊讶地发现，`ReplicaSet` 和所有的 `Pod` 依然在运行！
   > 3. `ReplicaSet` **成为孤儿**：如果你查看那个幸存的 `ReplicaSet` 的 YAML (`kubectl get rs [rs-name] -o yaml`)，你会发现它 `metadata` 里的 `ownerReferences` 字段**已经不见了**。它不再属于任何人，变成了一个独立的、没人管理的 `ReplicaSet`。
 
+## K3d 运行（ **PLG 栈**: Promtail + Loki + Grafana）
+
+1. 准备工作: 安装helm
+
+   ```shell
+   sudo snap install helm --classic
+   ```
+
+2. 第一步：理解架构
+
+   在动手之前，先看一眼我们将要搭建的架构：
+
+   1. **Promtail (搬运工)**：它以 **DaemonSet** 的形式运行，意味着你 k3d 的每一个“节点容器”里都会自动运行一个 Promtail。它负责去 `/var/log/pods`（就是你刚才进去的那个目录）抓取日志，并打上标签（Pod名、Namespace等）。
+   2. **Loki (仓库)**：它是核心存储，负责接收 Promtail 发来的流，并进行压缩存储。
+   3. **Grafana (仪表盘)**：可视化的 Web 界面，我们在这里查询和看图。
+
+3. 第二步：使用 Helm 安装 Loki-Stack
+   为了简化流程，我们使用官方的 loki-stack Chart，它会把上面三个组件打包一起装好。
+
+   **1. 添加 Grafana 仓库** 在你的终端执行：
+
+   ```shell
+   helm repo add grafana https://grafana.github.io/helm-charts
+   helm repo update
+   ```
+
+   **2. 创建一个独立的 Namespace** 把监控相关的资源隔离出来是个好习惯：
+
+   ```shell
+   kubectl create namespace logging
+   ```
+
+   **3. 安装 PLG 栈** 执行下面的命令。 *注意：我们显式开启了 Grafana，因为这个 Chart 默认可能不安装它。*
+
+   ```shell
+   helm upgrade --install loki grafana/loki-stack \
+     --namespace logging \
+     --set grafana.enabled=true \
+     --set promtail.enabled=true \
+     --set loki.persistence.enabled=false
+   ```
+
+   *(注：为了 k3d 实验方便，我关闭了 persistence 持久化存储。如果你重启 k3d 集群，Loki 里的旧日志会丢失，但对实验来说足够了且更轻量。)*
+
+4. 第三步：验证安装
+
+   等待几分钟，查看 Pod 是否都跑起来了：
+
+   ```shell
+   kubectl get pods -n logging
+   ```
+
+   你应该能看到类似这样的列表：
+
+   - `loki-0` (或者 `loki-promtail-...`)
+   - `loki-grafana-...`
+
+   如果状态都是 `Running`，恭喜你，系统已经由守转攻了！
+
+5. 第四步：获取 Grafana 密码
+
+   Grafana 默认生成的 `admin` 密码保存在 K8s 的 Secret 里。我们需要把它解密出来。
+
+   执行这条命令（这是运维人员必备的“黑客”技能）：
+
+   ```shell
+   # 获取 secret，提取 admin-password 字段，并 base64 解码
+   kubectl get secret --namespace logging loki-grafana -o jsonpath="{.data.admin-password}" | base64 --decode ; echo
+   ```
+
+   终端会输出一串字符，**复制它**，这就是你的登录密码。
+
+6. 第五步：访问 Grafana (Port Forwarding)
+
+   因为你在 k3d 里面，外部无法直接访问 ClusterIP。我们需要用 `port-forward` 把 Grafana 的端口映射到你物理机的 `localhost`
+
+   ```shell
+   # 将 k8s 内部的 80 端口映射到你电脑的 3000 端口
+   kubectl port-forward --namespace logging service/loki-grafana 3000:80
+   ```
+
+   *注意：这个命令会占用终端，不要关闭它。*
+
+7. 第六步：见证奇迹的时刻
+
+   1. 打开浏览器，访问：`http://localhost:3000`
+   2. **用户名**：`admin`
+   3. **密码**：刚才复制的那串字符。
+   4. 进入首页后，点击左侧菜单的 **"Explore" (指南针图标)**。
+   5. 在顶部的下拉框中，确保选择了 **"Loki"** 作为数据源。
+
+   **现在，我们来查你的 Spring Boot 日志！**
+
+8. 高级查询
+
+   ```shell
+   ## ~ 为正则
+   {namespace="default"} | json | level="ERROR"
+   {namespace="default"} | json | message != "exception"
+   {namespace="default"} | json | message !~ "(?i).*exception.*"
+   {namespace="default"} | json | message = "exception"
+   {namespace="default"} | json | message =~ "(?i).*exception.*"
+   {namespace="default"} |=
+   {namespace="default"} |~ 
+   {namespace="default"} !=
+   {namespace="default"} !~
+   
+   ```
+
+   
+
+
 ## 其它
 
 * `kind: Ingress` 会暴露一个 IP 地址吗？
