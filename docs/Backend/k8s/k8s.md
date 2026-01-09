@@ -161,8 +161,6 @@ The components of a Kubernetes cluster:
 
   > Kubernetes v1.31以后会重试8次以使生成唯一的名字
   
-* 在 Deployment（以及 ReplicaSet, StatefulSet, Job, CronJob 等这类控制器）的 Pod 模板（`spec.template`）中，`metadata.name` 这个字段是**不能设置**的。如果你尝试设置它，Kubernetes API Server 会拒绝你的请求。
-
 * 一个 Deployment 实际上并不直接管理 Pod，它的工作流程是这样的：
 
   1. **Deployment**: 你创建了一个 Deployment 资源，它的名称是固定的（比如 `nginx-deployment`）。这个 Deployment 负责管理“版本”。
@@ -175,7 +173,7 @@ The components of a Kubernetes cluster:
   
   3. **Pod**: ReplicaSet 的任务很简单，就是确保有指定数量的、符合其模板的 Pod 正在运行。它会根据自己的名称作为**前缀**，去创建 Pod。所以，最终 Pod 的名称也是**动态生成的**，格式通常是 `[ReplicaSet名称]-[随机后缀]`，例如 `nginx-deployment-66b6c48dd5-x7p9m`。
 
-## Servcie
+## Service
 
 * Service：负责为一组 Pod 提供一个稳定、统一的访问入口。因为 Pod 是“短暂”的，它们的 IP 地址会变化。Service 提供了一个固定的
   IP 地址和 DNS 名称，使得其他应用或外部用户可以方便地访问到你的 Nginx 服务，而无需关心后端具体是哪个 Pod 在提供服务。
@@ -242,10 +240,7 @@ The components of a Kubernetes cluster:
       YAML 文件描述的状态相匹配的对象”。Kubernetes 不仅会创建这个对象，还会记录下这个“期望状态”，以便于未来的比较和更新。
 
 * 仅仅修改并保存在本地 configs/ 目录下的 YAML 文件，并不会对集群产生任何影响。 Kubernetes 集群完全不知道你本地文件的变化。你必须通过
-  kubectl apply 这个动作，明确地告诉 Kubernetes：“请按照我最新的配置文件，去同步集群的状态。”
-
-* 仅仅修改并保存在本地 configs/ 目录下的 YAML 文件，并不会对集群产生任何影响。 Kubernetes 集群完全不知道你本地文件的变化。你必须通过
-  kubectl apply 这个动作，明确地告诉 Kubernetes：“请按照我最新的配置文件，去同步集群的状态。”
+  kubectl apply 这个动作，明确地告诉 Kubernetes："请按照我最新的配置文件，去同步集群的状态。"
 
   ```shell
    kubectl diff -f configs/
@@ -323,21 +318,7 @@ Kubernetes objects are persistent entities in the Kubernetes system. Kubernetes 
 
   Only one object of a given kind can have a given name at a time.  Names must be unique across **all API versions** of the same resource. API resources are distinguished by their API group, resource type, namespace (for namespaced resources), and name. In other words, API version is irrelevant in this context.
 
-* In cases when objects represent a physical entity, like a Node representing a physical host, when the host is re-created under the same name without deleting and re-creating the Node, Kubernetes treats the new host as the old one, which may lead to inconsistencies.
-
-  > 1. 标记节点不可调度
-  >
-  >    kubectl cordon worker-01
-  >
-  > 2. **驱逐节点上的所有 Pod**
-  >
-  >    kubectl drain worker-01 --ignore-daemonsets
-  >
-  > 3. 从 Kubernetes 中删除节点对象
-  >
-  >    kubectl delete node worker-01
-
-## Kubernetes API 
+## Kubernetes API
 
 * There are two mechanisms that Kubernetes uses to publish these API specifications
 
@@ -437,7 +418,7 @@ Kubernetes objects are persistent entities in the Kubernetes system. Kubernetes 
 
   > 1. 使用 `k3d image import` 命令
   >
-  >    `k`3d image import springboot3:v1.0.10 -c my-cluster``
+  >    `k3d image import springboot3:v1.0.10 -c my-cluster`
   >
   > 2. **修改你的 Deployment YAML 文件**
   >
@@ -2657,7 +2638,7 @@ Kubernetes 提供了一个 **TTL-after-finished 控制器**，专门用于限制
 
 **比喻理解：** 你可以将已完成的 Job 想象成一张“**餐厅结账单**”。默认情况下，账单会留在桌上，直到服务员（用户）手动收走。设置 `.spec.ttlSecondsAfterFinished` 就像是给账单装了一个“**自动碎纸机**”：它允许你在客人离开（任务完成）后的几分钟内查看消费明细（日志）；一旦倒计时结束，碎纸机就会自动把账单和桌上的餐具（Pod）全部清理干净，腾出位置给下一位客人。
 
-#### CornJob
+#### CronJob
 
 根据提供的来源，**CronJob** 是 Kubernetes 中用于管理周期性、重复性任务的核心控制器。它通过 Cron 格式的时间表来自动创建 Job 对象，类似于 Unix 系统中的 **crontab**。
 
