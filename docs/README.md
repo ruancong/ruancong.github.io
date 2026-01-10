@@ -10,6 +10,9 @@ sidebarDepth: 4
 * [linux笔记](./Linux/linux.md)
 * [commands](./Linux/commands.md)
 
+### python
+* [python](./python/python.md)
+
 ### Backend
 #### 问题解决   
 * [问题解决纪录](./Backend/problem-solved/问题解决.md)
