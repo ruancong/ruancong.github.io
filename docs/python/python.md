@@ -12,10 +12,10 @@ python --version
 ## 传统的创建虚拟环境的方式
 
 ### Create the virtual environment:
- 
+
 ```shell
  python3 -m venv .venv
- ```
+```
 
 ### Activate the environment:
 
@@ -89,11 +89,46 @@ Python中有两种形式的注释：
 1. 单行注释：以`#`和空格开头，可以注释掉从`#`开始后面一整行的内容。
 2. 多行注释：三个引号开头，三个引号结尾，通常用于添加多行说明性内容。
 
+在一个方法中，第一个非空行的注释会被解释为文档字符串（docstring）。可以用`help()`函数或者`__doc__`属性来查看文档字符串。它的标准格式如下：
+
+```python
+def add(a, b):
+    """
+    这是一个加法函数
+
+    Args:
+        a: 第一个加数
+        b: 第二个加数
+
+    Returns:
+        两个数的和
+    """
+    return a + b
+```
+
 ## 数据类型
 
 - 整型（`int`）：Python中可以处理任意大小的整数，而且支持二进制（如`0b100`，换算成十进制是4）、八进制（如`0o100`，换算成十进制是64）、十进制（`100`）和十六进制（`0x100`，换算成十进制是256）的表示法。
+
+  > 定义数值字面量时，如果数字特别长，可以通过插入 _ 分隔符来让它变得更易读
+  >
+  > \# 以"千"为单位分隔数字
+  >
+  >  i = 1_000_000  
+
 - 浮点型（`float`）：浮点数也就是小数，之所以称为浮点数，是因为按照科学记数法表示时，一个浮点数的小数点位置是可变的，浮点数除了数学写法（如`123.456`）之外还支持科学计数法（如`1.23456e2`）。
+
+  > print(0.1 + 0.2) # 会丢失精度
+  >
+  > 不损失任何精度 有decimal.Decimal
+  >
+  > ```python
+  > # 必须使用字符串来表示数字。如果你提供的是普通浮点数而非字符串，在转换为 Decimal 对象前就会损失精度
+  > Decimal('0.1') + Decimal('0.2')
+  > ```
+
 - 字符串型（`str`）：字符串是以单引号或双引号括起来的任意文本，比如`'hello'`和`"hello"`。
+
 - 布尔型（`bool`）：布尔值只有`True`、`False`两种值，要么是`True`，要么是`False`。
 
 > 可以使用`type`函数对变量的类型进行检查
@@ -220,7 +255,7 @@ while True:
 
 ```python
 my_list = list('hello list')
-print(my_list)
+print(my_list) ## 因为字符串是可迭代的，所以构造了单个字符的list
 
 my_list_num = list(range(10))
 print(my_list_num)
@@ -258,8 +293,8 @@ print(items3[size - 1], items3[-1])    # 100 100
 # 列表的切片
 #  origin list : [35, 12, 99, 68, 55, 87,45, 8, 29,100]
 print(items3[:5])          # [35, 12, 99, 68, 55]
-print(items3[4:])          # [55, 87, 45, 8, 100]
-print(items3[-5:-7:-1])    # [55, 68]
+print(items3[4:])          # [55, 87, 45, 8,29, 100]
+print(items3[-5:-7:-1])    # [87, 55]
 print(items3[::-2])        # [100, 45, 55, 99, 35]
 
 # 列表的比较运算
@@ -361,7 +396,29 @@ print(type(e))    # <class 'tuple'>
 
 #### 打包和解包
 
+在 Python 的解包（Unpacking）上下文中，“贪婪地”（greedily）表示 **尽可能多地匹配和捕获剩余的元素**。
+
+具体来说，当解释器处理带有星号`*`的解包表达式时，它的工作逻辑是：
+
+1. **先满足确定的**：先给没有星号的变量分配值（以此确定开头和结尾的锚点）。
+2. **统吃剩下的**：星号表达式负责把**剩下所有**未被分配的元素全部“吞”进去，打包成一个列表。
+
 当我们把多个用逗号分隔的值赋给一个变量时，多个值会打包成一个元组类型；当我们把一个元组赋值给多个变量时，元组会解包成多个值然后分别赋给对应的变量。 如下面的代码所示。
+
+> 举例说明
+> 假设有一个包含 5 个元素的列表：
+>
+> ```python
+> data = [0, 1, 2, 3, 4]
+> ```
+>
+> ```python
+> head, *body, tail = data
+> ```
+>
+> 1. head 拿走第 1 个元素 (0)
+> 2. tail 拿走最后 1 个元素 (4)
+> 3. *body 贪婪地捕获剩下所有中间的元素 ([1, 2, 3])
 
 ```python
 # 打包
@@ -416,6 +473,20 @@ print(list(info))       # ['骆昊', 175, True, '四川成都']
 fruits = ['apple', 'banana', 'orange']
 print(tuple(fruits))    # ('apple', 'banana', 'orange')
 ```
+
+#### 单下划线变量名 _
+
+假如你想在解包赋值时忽略某些变量，就可以使用 _ 作为变量名
+
+```python
+# 忽略展开时的第二个变量
+author, _ = usernames
+
+# 忽略第一个和最后一个变量之间的所有变量
+username, *_, score = data
+```
+
+
 
 ### 字符串
 
@@ -536,6 +607,36 @@ print(s.strip())    # jackfrued@126.com
 ```
 
 > `strip`方法还有`lstrip`和`rstrip`两个版本
+
+#### 分隔字符串
+
+```python
+suits = 'spades diamonds clubs hearts'.split()
+```
+
+当split方法没有传入参数时，会把字符串空白字符(whitespace)分割成列表
+
+1. 分隔符：任何空白字符，包括空格、制表符 (\t)、换行符 (\n)、回车符 (\r) 等。
+2. 合并空白：连续的多个空白字符会被视为一个分隔符（这与 Java 的 split(" ") 不同，后者会产生空字符串）。
+3. 去除首尾：如果字符串首尾有空白，结果列表中不会包含空字符串。
+
+#### 不常用但特别好用的字符串方法
+
+```python
+def extract_value_v2(s):
+    # 当 s 包含分隔符 : 时，元组最后一个成员刚好是 value
+    # 若是没有分隔符，最后一个成员默认是空字符串 ''
+    return s.partition(':')[-1]
+
+s = '明明是中文,却使用了英文标点.'
+# 创建替换规则表：',' -> '，', '.' -> '。'
+table = s.maketrans(',.', '，。')
+s.translate(table)
+
+
+```
+
+
 
 ### 集合
 
@@ -787,6 +888,36 @@ print(stu.__name)
 `__repr__` 相当于java中重写类的toString方法
 
 `@staticmethod` 来定义静态方法
+
+####  `__len__` 和 `__getitem__` 
+
+实现 `__len__` 和 `__getitem__` 的对象可以使用 len() 和 []
+
+```python
+class FrenchDeck:
+    ranks = [str(n) for n in range(2, 11)] + list('JQKA')
+    suits = 'spades diamonds clubs hearts'.split()
+
+    def __init__(self):
+        self._cards = [NamedCard(rank, suit) for suit in self.suits
+                                        for rank in self.ranks]
+
+    def __len__(self):
+        return len(self._cards)
+
+    def __getitem__(self, position):
+        return self._cards[position]
+
+frenchDeck = FrenchDeck()
+print(frenchDeck[0])
+print(len(frenchDeck))
+print(frenchDeck[-1])
+print(choice(frenchDeck))
+```
+
+
+
+
 
 ## 包管理工具pip的使用
 
