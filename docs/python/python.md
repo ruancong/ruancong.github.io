@@ -1,3 +1,5 @@
+# Python note
+
 ## 查看版本
 
 ```shell
@@ -11,13 +13,13 @@ python --version
 
 ## 传统的创建虚拟环境的方式
 
-### Create the virtual environment:
+### Create the virtual environment
 
 ```shell
- python3 -m venv .venv
+python3 -m venv .venv
 ```
 
-### Activate the environment:
+### Activate the environment
 
 ```shell
 source .venv/bin/activate
@@ -71,7 +73,6 @@ pip install ipython
 ```
 
 > **温馨提示**：在使用上面的命令安装IPython之前，可以先通过`pip config set global.index-url https://pypi.doubanio.com/simple`命令将`pip`的下载源修改为国内的豆瓣网，否则下载安装的过程可能会非常的缓慢。
-
 > 如果想恢复到默认设置，可以`pip config unset global.index-url`, 或者`pip config edit --editor `打开配置文件，进行注释
 
 ### 集成开发环境 - PyCharm
@@ -620,6 +621,19 @@ suits = 'spades diamonds clubs hearts'.split()
 2. 合并空白：连续的多个空白字符会被视为一个分隔符（这与 Java 的 split(" ") 不同，后者会产生空字符串）。
 3. 去除首尾：如果字符串首尾有空白，结果列表中不会包含空字符串。
 
+#### 分隔符拼接多个字符串
+
+比较常见的 Python 式做法是：首先创建一个空列表，然后把需要拼接的字符串都放进列表，最后调用 str.join 来获得大字符串
+
+```python
+words = ['Numbers(1-10):']
+for i in range(10):
+    words.append(f'Value: {i + 1}')
+print('\n'.join(words))
+```
+
+> .join里的参数是可迭代对象
+
 #### 不常用但特别好用的字符串方法
 
 ```python
@@ -632,11 +646,7 @@ s = '明明是中文,却使用了英文标点.'
 # 创建替换规则表：',' -> '，', '.' -> '。'
 table = s.maketrans(',.', '，。')
 s.translate(table)
-
-
 ```
-
-
 
 ### 集合
 
