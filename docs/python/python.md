@@ -73,7 +73,7 @@ pip install ipython
 ```
 
 > **温馨提示**：在使用上面的命令安装IPython之前，可以先通过`pip config set global.index-url https://pypi.doubanio.com/simple`命令将`pip`的下载源修改为国内的豆瓣网，否则下载安装的过程可能会非常的缓慢。
-> 如果想恢复到默认设置，可以`pip config unset global.index-url`, 或者`pip config edit --editor `打开配置文件，进行注释
+> 如果想恢复到默认设置，可以`pip config unset global.index-url`, 或者`pip config edit --editor vim`打开配置文件，进行注释
 
 ### 集成开发环境 - PyCharm
 
@@ -113,9 +113,9 @@ def add(a, b):
 
   > 定义数值字面量时，如果数字特别长，可以通过插入 _ 分隔符来让它变得更易读
   >
-  > \# 以"千"为单位分隔数字
+  > 以"千"为单位分隔数字
   >
-  >  i = 1_000_000  
+  > i = 1_000_000
 
 - 浮点型（`float`）：浮点数也就是小数，之所以称为浮点数，是因为按照科学记数法表示时，一个浮点数的小数点位置是可变的，浮点数除了数学写法（如`123.456`）之外还支持科学计数法（如`1.23456e2`）。
 
@@ -168,7 +168,7 @@ def add(a, b):
 | `+` `-`                                         | 加，减                         |
 | `>>` `<<`                                       | 右移，左移                     |
 | `&`                                             | 按位与                         |
-| `^` `|`                                         | 按位异或，按位或               |
+| `^``|`                                          | 按位异或，按位或               |
 | `<=` `<` `>` `>=`                               | 小于等于，小于，大于，大于等于 |
 | `==` `!=`                                       | 等于，不等于                   |
 | `is` `is not`                                   | 身份运算符                     |
@@ -176,16 +176,6 @@ def add(a, b):
 | `not` `or` `and`                                | 逻辑运算符                     |
 | `=` `+=` `-=` `*=` `/=` `%=` `//=` `**=` `&=` ` | =` `^=` `>>=` `<<=`            |
 
-## 格式化字符串
-
-```python
-f = float(input('请输入华氏温度: '))
-c = (f - 32) / 1.8
-# 后面一个 % 是字符串格式化操作符 是早期的python版本中用的
-print('%.1f华氏度 = %.1f摄氏度' % (f, c))
-# f 是 Python 3.6 及更高版本中的 f-string（格式化字符串）的前缀标识符。f-string 是一种方便的字符串格式化方法，它允许在字符串中直接插入变量的值。
-print(f"{f:.1f}华氏度 = {c:.1f}摄氏度")
-```
 
 ## 代码块
 
@@ -487,8 +477,6 @@ author, _ = usernames
 username, *_, score = data
 ```
 
-
-
 ### 字符串
 
 ```python
@@ -583,7 +571,7 @@ print(s[::-1])      # 654321cba
 print(s[::-2])      # 642ca
 ```
 
-#### 格式化字符串
+#### 字符串对齐和填充
 
 ```python
 s = 'hello, world'
@@ -597,6 +585,89 @@ print(s.ljust(20, '~'))   # hello, world~~~~~~~~
 # 在字符串的左侧补零
 print('33'.zfill(5))      # 00033
 print('-33'.zfill(5))     # -0033
+```
+
+#### 字符串格式化
+
+Python 提供了多种字符串格式化方法：
+
+##### 1. f-string (推荐，Python 3.6+)
+
+```python
+name = 'Alice'
+age = 25
+height = 1.68
+
+# 基本用法
+print(f'My name is {name}, I am {age} years old')
+# My name is Alice, I am 25 years old
+
+# 表达式计算
+print(f'{name} will be {age + 1} next year')
+# Alice will be 26 next year
+
+# 格式化数字：指定小数位数
+print(f'Height: {height:.1f}m')  # Height: 1.7m
+
+# 格式化数字：指定宽度和对齐
+price = 49.5
+print(f'Price: {price:>10.2f}')  # Price:      49.50
+print(f'Price: {price:<10.2f}')  # Price: 49.50
+print(f'Price: {price:^10.2f}')  # Price:   49.50
+
+# 千分位分隔符
+amount = 1234567.89
+print(f'Amount: {amount:,.2f}')  # Amount: 1,234,567.89
+
+# 百分比格式
+ratio = 0.875
+print(f'Success rate: {ratio:.1%}')  # Success rate: 87.5%
+
+# 进制转换
+num = 42
+print(f'Binary: {num:b}')    # Binary: 101010
+print(f'Octal: {num:o}')     # Octal: 52
+print(f'Hex: {num:x}')       # Hex: 2a
+print(f'Hex: {num:X}')       # Hex: 2A
+```
+
+##### 2. format() 方法
+
+```python
+name = 'Bob'
+age = 30
+
+# 位置参数
+print('My name is {}, I am {} years old'.format(name, age))
+# My name is Bob, I am 30 years old
+
+# 索引参数
+print('My name is {0}, I am {1} years old. {0} is my name'.format(name, age))
+# My name is Bob, I am 30 years old. Bob is my name
+
+# 关键字参数
+print('My name is {n}, I am {a} years old'.format(n=name, a=age))
+# My name is Bob, I am 30 years old
+
+# 格式化数字
+pi = 3.1415926
+print('Pi: {:.2f}'.format(pi))  # Pi: 3.14
+print('Pi: {:10.3f}'.format(pi))  # Pi:      3.142
+```
+
+##### 3. % 格式化（旧式，不推荐）
+
+```python
+name = 'Charlie'
+age = 35
+
+# 基本用法
+print('My name is %s, I am %d years old' % (name, age))
+# My name is Charlie, I am 35 years old
+
+# 格式化浮点数
+height = 1.75
+print('Height: %.2f' % height)  # Height: 1.75
 ```
 
 #### 修剪操作
@@ -739,9 +810,6 @@ print(is_triangle(c=5, b=4, a=3))
 ```
 
 > 上面的`is_triangle`函数，参数列表中的`*`是一个分隔符，`*`前面的参数都是位置参数，而`*`后面的参数就是命名关键字参数。
-
-
-
 设计函数时，如果既不知道调用者会传入的参数个数，也不知道调用者会不会指定参数名，那么同时使用**可变参数**和**关键字参数**。关键字参数会将传入的带参数名的参数组装成一个字典，参数名就是字典中键值对的键，而参数值就是字典中键值对的值，代码如下所示。
 
 ```python
@@ -899,7 +967,7 @@ print(stu.__name)
 
 `@staticmethod` 来定义静态方法
 
-####  `__len__` 和 `__getitem__` 
+### `__len__` 和 `__getitem__`
 
 实现 `__len__` 和 `__getitem__` 的对象可以使用 len() 和 []
 
@@ -924,10 +992,6 @@ print(len(frenchDeck))
 print(frenchDeck[-1])
 print(choice(frenchDeck))
 ```
-
-
-
-
 
 ## 包管理工具pip的使用
 
