@@ -404,6 +404,9 @@ d = ('hello', )
 print(type(d))    # <class 'tuple'>
 e = (100, )
 print(type(e))    # <class 'tuple'>
+# 接收iterable 对象
+f = tuple('hello')
+print(f)
 ```
 
 #### 打包和解包
@@ -497,6 +500,8 @@ author, _ = usernames
 # 忽略第一个和最后一个变量之间的所有变量
 username, *_, score = data
 ```
+
+#### 具名元组（namedtuple)
 
 ### 字符串
 
@@ -999,6 +1004,41 @@ def upload(filename):
 download('MySQL从删库到跑路.avi')
 upload('Python从入门到住院.pdf')
 ```
+
+## 常用的内置函数、类
+
+### enumerate
+
+```python
+names = ['foo', 'bar']
+## start用于指定循环下标的初始值（默认为 0）
+for index, s in enumerate(names, start=10):
+    print(index, s)
+ 
+```
+
+###  列表推导式 (List Comprehension)
+
+```python
+print('---------------- list comprehension ----------------')
+numbers = [1, 2, 3, 4, 5]
+# 会直接加载到内存中
+num_result = [x * 3 for x in numbers if x % 2 == 0]
+print(num_result)
+```
+
+### 生成器表达式 (Generator Expression)
+
+```python
+print('---------------- generation expression ----------------')
+# 不会直接加载到内存中，而是生成一个生成器对象
+g_express = (x * 3 for x in numbers if x % 2 == 0)
+print(g_express)
+for index, x in enumerate(g_express):
+    print(f'第{index}个元素: {x}')
+```
+
+
 
 ## 面向对象
 
