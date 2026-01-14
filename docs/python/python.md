@@ -107,7 +107,7 @@ def add(a, b):
     return a + b
 ```
 
-## 数据类型
+## 基础数据类型
 
 - 整型（`int`）：Python中可以处理任意大小的整数，而且支持二进制（如`0b100`，换算成十进制是4）、八进制（如`0o100`，换算成十进制是64）、十进制（`100`）和十六进制（`0x100`，换算成十进制是256）的表示法。
 
@@ -128,8 +128,6 @@ def add(a, b):
   > Decimal('0.1') + Decimal('0.2')
   > ```
 
-- 字符串型（`str`）：字符串是以单引号或双引号括起来的任意文本，比如`'hello'`和`"hello"`。
-
 - 布尔型（`bool`）：布尔值只有`True`、`False`两种值，要么是`True`，要么是`False`。
 
 > 可以使用`type`函数对变量的类型进行检查
@@ -141,6 +139,30 @@ def add(a, b):
 - `str()`：将指定的对象转换成字符串形式，可以指定编码。
 - `chr()`：将整数转换成该编码对应的字符串（一个字符）。
 - `ord()`：将字符串（一个字符）转换成对应的编码（整数）
+
+数字的无穷大
+
+```python
+
+# 无穷大，无穷小 float("inf") 和 float("-inf")。这两个值分别对应数学世界里的正负无穷大。
+# 当它们和任意数值做比较时，满足这样的规律：float("-inf") < 任意数值 < float("inf")。
+print(float("-inf") < 9 < float("inf"))
+ 
+def sort_users_inf(users):
+
+    def key_func(username):
+        age = users[username]
+        # 当年龄为空时，返回正无穷大作为 key，因此就会被排到最后
+        return age if age is not None else float('inf')
+
+    return sorted(users.keys(), key=key_func)
+
+users = {"tom": 19, "jenny": 13, "jack": None, "andrew": 43}
+print(sort_users_inf(users))
+ 
+```
+
+
 
 ## 变量命名
 
@@ -175,7 +197,6 @@ def add(a, b):
 | `in` `not in`                                   | 成员运算符                     |
 | `not` `or` `and`                                | 逻辑运算符                     |
 | `=` `+=` `-=` `*=` `/=` `%=` `//=` `**=` `&=` ` | =` `^=` `>>=` `<<=`            |
-
 
 ## 代码块
 
@@ -238,7 +259,7 @@ while True:
         break
 ```
 
-## 常用数据结构
+## 容器类型
 
 ### 列表
 
@@ -523,52 +544,52 @@ print(s1 is s2, s2 is s3)    # False True
 s = 'abc123456'
 
 # i=2, j=5, k=1的正向切片操作
-print(s[2:5])       # c12
+print(s[2:5])     # c12
 
 # i=-7, j=-4, k=1的正向切片操作
-print(s[-7:-4])     # c12
+print(s[-7:-4])   # c12
 
 # i=2, j=9, k=1的正向切片操作
-print(s[2:])        # c123456
+print(s[2:])      # c123456
 
 # i=-7, j=9, k=1的正向切片操作
-print(s[-7:])       # c123456
+print(s[-7:])     # c123456
 
 # i=2, j=9, k=2的正向切片操作
-print(s[2::2])      # c246
+print(s[2::2])    # c246
 
 # i=-7, j=9, k=2的正向切片操作
-print(s[-7::2])     # c246
+print(s[-7::2])   # c246
 
 # i=0, j=9, k=2的正向切片操作
-print(s[::2])       # ac246
+print(s[::2])     # ac246
 
 # i=1, j=-1, k=2的正向切片操作
-print(s[1:-1:2])    # b135
+print(s[1:-1:2])  # b135
 
 # i=7, j=1, k=-1的负向切片操作
-print(s[7:1:-1])    # 54321c
+print(s[7:1:-1])  # 54321c
 
 # i=-2, j=-8, k=-1的负向切片操作
-print(s[-2:-8:-1])  # 54321c
+print(s[-2:-8:-1]) # 54321c
 
 # i=7, j=-10, k=-1的负向切片操作
-print(s[7::-1])     # 54321cba
+print(s[7::-1])  # 54321cba
 
 # i=-1, j=1, k=-1的负向切片操作
-print(s[:1:-1])     # 654321c
+print(s[:1:-1])  # 654321c
 
 # i=0, j=9, k=1的正向切片
-print(s[:])         # abc123456
+print(s[:])   # abc123456
 
 # i=0, j=9, k=2的正向切片
-print(s[::2])       # ac246
+print(s[::2])  # ac246
 
 # i=-1, j=-10, k=-1的负向切片
-print(s[::-1])      # 654321cba
+print(s[::-1])   # 654321cba
 
 # i=-1, j=-10, k=-2的负向切片
-print(s[::-2])      # 642ca
+print(s[::-2])    # 642ca
 ```
 
 #### 字符串对齐和填充
@@ -579,7 +600,7 @@ s = 'hello, world'
 # center方法以宽度20将字符串居中并在两侧填充*
 print(s.center(20, '*'))  # ****hello, world****
 # rjust方法以宽度20将字符串右对齐并在左侧填充空格
-print(s.rjust(20))        #         hello, world
+print(s.rjust(20))        # hello, world
 # ljust方法以宽度20将字符串左对齐并在右侧填充~
 print(s.ljust(20, '~'))   # hello, world~~~~~~~~
 # 在字符串的左侧补零
@@ -711,6 +732,7 @@ print('\n'.join(words))
 def extract_value_v2(s):
     # 当 s 包含分隔符 : 时，元组最后一个成员刚好是 value
     # 若是没有分隔符，最后一个成员默认是空字符串 ''
+    # 它会找到第一个分隔符，然后返回一个元组，元组的三个成员分别是分隔符前的字符串、分隔符本身和分隔符后的字符串
     return s.partition(':')[-1]
 
 s = '明明是中文,却使用了英文标点.'
@@ -718,6 +740,30 @@ s = '明明是中文,却使用了英文标点.'
 table = s.maketrans(',.', '，。')
 s.translate(table)
 ```
+
+#### “字符串”和“字节串”
+
+![image-20260114105233386](./images/`python`/image-20260114105233386.png)
+
+#### 单行文本写成多行
+
+```python
+## 这种方式的字符串是单行的
+inline_text_of_multiple_lines_style = ("line1"
+"line2"
+"line3")
+print(inline_text_of_multiple_lines_style)
+
+## 这种方式的字符串是多行的
+multiple_lines2 = """
+line1
+line2
+line3
+"""
+print(multiple_lines2)
+```
+
+
 
 ### 集合
 
@@ -753,6 +799,23 @@ print(person)
 person = dict(name='王大锤', age=55, weight=60, home='中同仁路8号')
 print(person)    # {'name': '王大锤', 'age': 55, 'weight': 60, 'home': '中同仁路8号'}
 ```
+
+### 枚举
+
+```python
+# int必须在最前面
+class UserType(int, Enum):
+    VIP = 3
+    BANNED = 13
+
+print(UserType.VIP.value)
+# 可以直接当数字使用
+print( 2 + UserType.VIP)
+print(UserType.BANNED)
+
+```
+
+
 
 ## 函数和模块
 
@@ -992,6 +1055,49 @@ print(len(frenchDeck))
 print(frenchDeck[-1])
 print(choice(frenchDeck))
 ```
+
+### None 类型
+
+`None` 是 Python 中**一等公民对象**。它是 `NoneType` 类的**唯一实例 (Singleton)**
+
+```python
+x = None
+
+# ✅ 正确 (Pythonic): 检查身份
+if x is None:
+    print("x is None")
+
+if x is not None:
+    print("x has a value")
+
+# ❌ 不推荐: 检查值 (虽然通常也能工作，但在工程上是不严谨的)
+if x == None:
+    pass
+```
+
+`None` 做函数参数的默认值的注意的点
+
+```python
+# 没有传入items，会使用默认值，多次调用时，会使用同一个默认值
+def add_item(item, items=[]):
+    items.append(item)
+    return items
+
+print(add_item(1))
+print(add_item(2))
+
+# 没有传入items，会使用默认值，多次调用时，每次都会创建一个新列表
+def add_item(item, items=None):
+    if items is None:
+        items = []  # 每次调用时创建一个新列表
+    items.append(item)
+    return items
+
+print(add_item(1))
+print(add_item(2))
+```
+
+
 
 ## 包管理工具pip的使用
 
