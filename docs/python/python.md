@@ -805,6 +805,65 @@ person = dict(name='王大锤', age=55, weight=60, home='中同仁路8号')
 print(person)    # {'name': '王大锤', 'age': 55, 'weight': 60, 'home': '中同仁路8号'}
 ```
 
+#### 遍历字典
+
+```python
+for key in person:
+    print(key, person[key])
+```
+
+#### 遍历字典的键值对
+
+```python
+for key, value in person.items():
+    print(key, value)
+```
+
+#### 访问不存在的key
+
+```python
+## 这种方式会报错
+print(person['gender'])
+
+## 捕获异常
+try:
+    print(person['gender'])
+except KeyError:
+    print('没有这个key')
+
+## 这种方式不会报错
+print(person.get('gender'))
+
+## 这种方式也不会报错，提供默认值
+print(person.get('gender', '未知'))
+```
+
+#### setdefault取值并修改
+
+```python
+d = {}
+d.setdefault('hobbies', []).append('羽毛球')
+print(d)
+
+d2 = {'hobbies': ['默认爱好']}
+d2.setdefault('hobbies', []).append('羽毛球')
+print(d2)
+```
+
+#### pop删除
+
+```python
+d3 = {'name': '王大锤', 'age': 55}
+# 不提供默认值，如果key不存在会报错
+returnValue = d3.pop('notExistKey', '默认值')
+print(returnValue)
+
+try:
+    del d3['notExistKey']
+except KeyError:
+    print('没有这个key')
+```
+
 ### 枚举
 
 ```python
@@ -819,8 +878,6 @@ print( 2 + UserType.VIP)
 print(UserType.BANNED)
 
 ```
-
-
 
 ## 函数和模块
 
